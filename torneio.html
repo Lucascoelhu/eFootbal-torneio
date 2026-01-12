@@ -1,168 +1,56 @@
-<!DOCTYPE html><html lang="pt-br">
+<!DOCTYPE html>
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Torneio • eFootball</title>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet"><style>
-:root{
-  --bg:#05070a;
-  --card:#11151c;
-  --border:#222;
-  --primary:#00ff88;
-  --text:#eee;
-}
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:'Montserrat',sans-serif;
-  background:var(--bg);
-  color:var(--text);
-}
-header{
-  padding:20px;
-  border-bottom:2px solid var(--primary);
-  text-align:center;
-}
-.container{
-  max-width:900px;
-  margin:auto;
-  padding:15px;
-}
-.card{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:18px;
-  margin-bottom:15px;
-  animation:fade .4s ease;
-}
-.card h3{margin:0 0 10px}
-input{
-  width:100%;
-  padding:14px;
-  border-radius:12px;
-  border:1px solid var(--border);
-  background:#000;
-  color:#fff;
-  margin-bottom:10px;
-}
-button{
-  width:100%;
-  padding:14px;
-  border:none;
-  border-radius:14px;
-  font-weight:900;
-  cursor:pointer;
-}
-.btn{
-  background:var(--primary);
-  color:#000;
-}
-.player{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:12px;
-  border-bottom:1px solid var(--border);
-}
-.player:last-child{border:none}
-.share{
-  background:#000;
-  color:var(--primary);
-  border:1px solid var(--border);
-}
-small{opacity:.6}
-@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1}}
-</style></head>
-<body><header>
-  <h2 id="nomeTorneio">Carregando...</h2>
-  <small id="info"></small>
-</header><div class="container">  <div class="card" id="adminArea" style="display:none">
-    <h3>➕ Adicionar jogador</h3>
-    <input id="nomeJogador" placeholder="Nome do jogador">
-    <button class="btn" onclick="addJogador()">Adicionar</button>
-  </div>  <div class="card">
-    <h3>⚽ Jogadores</h3>
-    <div id="listaJogadores"></div>
-  </div>  <div class="card">
-    <button class="share" onclick="compartilhar()">🔗 Compartilhar torneio</button>
-  </div></div><script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-import { getFirestore, doc, getDoc, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+<title>Torneio</title>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAWic8GgxaPKjyFtIKH4KXj4J6A6bVOBg0",
   authDomain: "efootball-torneio.firebaseapp.com",
-  projectId: "efootball-torneio",
-  storageBucket: "efootball-torneio.firebasestorage.app",
-  messagingSenderId: "909084318349",
-  appId: "1:909084318349:web:a627eaf51f973b87df60c4"
+  projectId: "efootball-torneio"
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
-const auth = getAuth();
 
-const params = new URLSearchParams(window.location.search);
-const torneioId = params.get("id");
+const params = new URLSearchParams(location.search);
+const torneioId = params.get("tid");
+let uid;
 
-const torneioRef = doc(db,"torneios",torneioId);
-
-let dono = false;
-
-onAuthStateChanged(auth, async user=>{
-  const snap = await getDoc(torneioRef);
-  if(!snap.exists()) return alert("Torneio não encontrado");
-
-  document.getElementById("nomeTorneio").innerText = snap.data().nome;
-  document.getElementById("info").innerText = "ID: " + torneioId;
-
-  if(user && snap.data().owner === user.uid){
-    dono = true;
-    document.getElementById("adminArea").style.display = "block";
-  }
+onAuthStateChanged(auth, (user) => {
+  if (!user) location.href = "index.html";
+  uid = user.uid;
+  listenJogadores();
 });
 
-window.addJogador = async ()=>{
-  if(!dono) return;
-  const nome = document.getElementById("nomeJogador").value.trim();
-  if(!nome) return;
+function listenJogadores() {
+  onSnapshot(
+    collection(db, "users", uid, "torneios", torneioId, "jogadores"),
+    snap => {
+      jogadores.innerHTML = snap.docs.map(d => `<li>${d.data().nome}</li>`).join("");
+    }
+  );
+}
 
-  await addDoc(collection(db,"torneios",torneioId,"jogadores"),{
-    nome,
-    pontos:0,
-    vitorias:0,
-    empates:0,
-    derrotas:0,
-    criadoEm:Date.now()
-  });
+window.addJogador = async () => {
+  const nome = prompt("Nome do jogador");
+  if (!nome) return;
 
-  document.getElementById("nomeJogador").value="";
+  await addDoc(
+    collection(db, "users", uid, "torneios", torneioId, "jogadores"),
+    { nome, pts:0, v:0, e:0, d:0, sg:0, gp:0 }
+  );
 };
-
-onSnapshot(
-  collection(db,"torneios",torneioId,"jogadores"),
-  snap=>{
-    document.getElementById("listaJogadores").innerHTML = snap.empty
-      ? "<small>Nenhum jogador ainda</small>"
-      : snap.docs.map(d=>`
-        <div class="player">
-          <strong>${d.data().nome}</strong>
-          <small>${d.data().pontos} pts</small>
-        </div>
-      `).join("");
-  }
-);
-
-window.compartilhar = ()=>{
-  const link = window.location.href;
-  if(navigator.share){
-    navigator.share({title:"Torneio eFootball",url:link});
-  }else{
-    navigator.clipboard.writeText(link);
-    alert("Link copiado!");
-  }
-};
-</script></body>
+</script>
+</head>
+<body>
+<h2>Jogadores</h2>
+<ul id="jogadores"></ul>
+<button onclick="addJogador()">Adicionar Jogador</button>
+</body>
 </html>
