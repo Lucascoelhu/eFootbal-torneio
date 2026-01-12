@@ -1,256 +1,59 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard • eFootball Torneio</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-<style>
-:root{
-  --primary:#00ff88;
-  --bg:#05070a;
-  --card:#12161d;
-  --border:#222;
-  --text:#eee;
-  --gold:#ffaa00;
-}
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:'Montserrat',sans-serif;
-  background:var(--bg);
-  color:var(--text);
-}
-header{
-  padding:20px;
-  border-bottom:2px solid var(--primary);
-  background:#000;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-header h2{margin:0;font-weight:900}
-
-/* SELLO */
-.badge{
-  padding:6px 12px;
-  border-radius:20px;
-  font-size:11px;
-  font-weight:900;
-}
-.badge.free{
-  background:#333;
-  color:#aaa;
-}
-.badge.pro{
-  background:linear-gradient(135deg,#ffaa00,#ffdd55);
-  color:#000;
-}
-
-/* CONTAINER */
-.container{
-  max-width:900px;
-  margin:auto;
-  padding:15px;
-}
-
-/* HERO */
-.hero{
-  background:linear-gradient(135deg,#00ff8830,#000);
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:20px;
-  margin-bottom:25px;
-  animation:fadeUp .6s ease;
-}
-.hero h3{margin:0 0 8px;font-weight:900}
-.hero p{font-size:13px;opacity:.8}
-
-/* BOTÕES */
-.actions{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-  margin-top:15px;
-}
-.btn{
-  padding:15px;
-  border:none;
-  border-radius:14px;
-  font-weight:900;
-  cursor:pointer;
-  font-size:13px;
-  transition:.25s;
-}
-.btn-primary{
-  background:var(--primary);
-  color:#000;
-}
-.btn-primary:hover{
-  transform:translateY(-2px);
-  box-shadow:0 10px 20px #00ff8830;
-}
-.btn-pro{
-  background:var(--gold);
-  color:#000;
-}
-.btn-pro:hover{
-  transform:translateY(-2px);
-  box-shadow:0 10px 20px #ffaa0030;
-}
-
-/* TORNEIOS */
-.section-title{
-  margin:25px 0 10px;
-  font-size:13px;
-  font-weight:900;
-  color:var(--primary);
-}
-.card{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:16px;
-  margin-bottom:12px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  animation:fadeUp .5s ease;
-  transition:.25s;
-}
-.card:hover{
-  transform:translateY(-3px) scale(1.01);
-  box-shadow:0 12px 25px rgba(0,0,0,.4);
-}
-.card span{font-weight:700}
-.card small{font-size:11px;opacity:.6}
-.card button{
-  background:#000;
-  color:var(--primary);
-  border:1px solid var(--border);
-  padding:8px 14px;
-  border-radius:10px;
-  font-weight:800;
-  cursor:pointer;
-}
-
-/* FOOTER */
-.footer{
-  text-align:center;
-  font-size:11px;
-  opacity:.4;
-  margin-top:30px;
-}
-
-/* ANIMAÇÃO */
-@keyframes fadeUp{
-  from{opacity:0;transform:translateY(10px)}
-  to{opacity:1;transform:none}
-}
-</style>
-</head>
-
-<body>
-
-<header>
-  <h2>⚽ eFootball Torneio</h2>
-  <span id="plano" class="badge free">FREE</span>
-</header>
-
-<div class="container">
-
-  <div class="hero">
-    <h3>Bem-vindo 👋</h3>
-    <p>Crie, gerencie e compartilhe torneios de eFootball com seus amigos.</p>
-
-    <div class="actions">
-      <button class="btn btn-primary" onclick="criarTorneio()">➕ Criar torneio</button>
-      <button class="btn btn-pro" onclick="location.href='ativar.html'">⭐ Ativar PRO</button>
-    </div>
-  </div>
-
-  <div class="section-title">🏆 Seus torneios</div>
-  <div id="lista-torneios"></div>
-
-  <div class="footer">
-    eFootball Torneio • Plataforma independente
-  </div>
-
-</div>
-
+<title>Dashboard</title>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, getDoc } from 
-"https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from 
-"https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAWic8GgxaPKjyFtIKH4KXj4J6A6bVOBg0",
   authDomain: "efootball-torneio.firebaseapp.com",
-  projectId: "efootball-torneio",
-  storageBucket: "efootball-torneio.firebasestorage.app",
-  messagingSenderId: "909084318349",
-  appId: "1:909084318349:web:a627eaf51f973b87df60c4"
+  projectId: "efootball-torneio"
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
-const auth = getAuth();
 
-let uid = null;
+let uid;
 
-onAuthStateChanged(auth, async user=>{
-  if(!user) location.href="index.html";
+onAuthStateChanged(auth, async (user) => {
+  if (!user) location.href = "index.html";
   uid = user.uid;
-
-  const snap = await getDoc(doc(db,"usuarios",uid));
-  const plano = snap.exists() ? snap.data().plano : "FREE";
-
-  const badge = document.getElementById("plano");
-  badge.textContent = plano;
-  badge.className = "badge " + (plano === "PRO" ? "pro" : "free");
-
-  carregarTorneios();
+  loadTorneios();
 });
 
-function carregarTorneios(){
-  onSnapshot(collection(db,"torneios"), snap=>{
-    const el = document.getElementById("lista-torneios");
-    const meus = snap.docs.filter(d=>d.data().owner === uid);
-
-    el.innerHTML = meus.length === 0
-      ? `<small>Nenhum torneio criado ainda.</small>`
-      : meus.map(d=>`
-        <div class="card">
-          <div>
-            <span>${d.data().nome}</span><br>
-            <small>${d.id}</small>
-          </div>
-          <button onclick="abrir('${d.id}')">Abrir</button>
-        </div>
-      `).join("");
-  });
+async function loadTorneios() {
+  const snap = await getDocs(collection(db, "users", uid, "torneios"));
+  lista.innerHTML = snap.docs.map(d =>
+    `<li onclick="openTorneio('${d.id}')">${d.data().nome}</li>`
+  ).join("");
 }
 
-window.criarTorneio = async ()=>{
-  const nome = prompt("Nome do torneio:");
-  if(!nome) return;
-  const docRef = await addDoc(collection(db,"torneios"),{
+window.createTorneio = async () => {
+  const nome = prompt("Nome do torneio");
+  if (!nome) return;
+
+  await addDoc(collection(db, "users", uid, "torneios"), {
     nome,
-    owner:uid,
-    created:Date.now()
+    plano: "FREE",
+    criadoEm: Date.now()
   });
-  abrir(docRef.id);
+
+  loadTorneios();
 };
 
-window.abrir = id=>{
-  location.href = `torneio.html?id=${id}`;
+window.openTorneio = (id) => {
+  location.href = `torneio.html?tid=${id}`;
 };
 </script>
-
+</head>
+<body>
+<h2>Meus Torneios</h2>
+<ul id="lista"></ul>
+<button onclick="createTorneio()">Criar Torneio</button>
 </body>
 </html>
