@@ -1,56 +1,214 @@
 <!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard • eFootball Torneio</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+:root{
+  --primary:#00ff88;
+  --bg:#05070a;
+  --card:#12161d;
+  --border:#222;
+  --text:#eee;
+  --gold:#ffaa00;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:'Montserrat',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+header{
+  padding:20px;
+  border-bottom:2px solid var(--primary);
+  background:#000;
+}
+header h2{
+  margin:0;
+  font-weight:900;
+}
+.container{
+  max-width:900px;
+  margin:auto;
+  padding:15px;
+}
+.hero{
+  background:linear-gradient(135deg,#00ff8840,#000);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:20px;
+  margin-bottom:20px;
+}
+.hero h3{
+  margin:0 0 10px;
+  font-weight:900;
+}
+.hero p{
+  font-size:13px;
+  opacity:.8;
+}
+.actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:15px;
+}
+.btn{
+  padding:15px;
+  border:none;
+  border-radius:12px;
+  font-weight:900;
+  cursor:pointer;
+  font-size:13px;
+}
+.btn-primary{
+  background:var(--primary);
+  color:#000;
+}
+.btn-pro{
+  background:var(--gold);
+  color:#000;
+}
+.section-title{
+  margin:25px 0 10px;
+  font-size:13px;
+  font-weight:900;
+  color:var(--primary);
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:15px;
+  margin-bottom:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.card span{
+  font-weight:700;
+}
+.card small{
+  font-size:11px;
+  opacity:.6;
+}
+.card button{
+  background:#000;
+  color:var(--primary);
+  border:1px solid var(--border);
+  padding:8px 12px;
+  border-radius:8px;
+  font-weight:800;
+  cursor:pointer;
+}
+.footer{
+  text-align:center;
+  font-size:11px;
+  opacity:.4;
+  margin-top:30px;
+}
+</style>
 </head>
-<body class="bg-gray-900 text-white p-4">
 
+<body>
 
-<h1 class="text-xl mb-4">Meus Torneios</h1>
-<input id="name" class="p-2 text-black rounded" placeholder="Nome do torneio" />
-<button onclick="create()" class="bg-blue-600 p-2 rounded ml-2">Criar</button>
+<header>
+  <h2>⚽ eFootball Torneio</h2>
+</header>
 
+<div class="container">
 
-<ul id="list" class="mt-4"></ul>
+  <div class="hero">
+    <h3>Bem-vindo 👋</h3>
+    <p>Crie, gerencie e compartilhe torneios de eFootball com seus amigos.</p>
 
+    <div class="actions">
+      <button class="btn btn-primary" onclick="criarTorneio()">
+        ➕ Criar novo torneio
+      </button>
+      <button class="btn btn-pro" onclick="window.location.href='ativar.html'">
+        ⭐ Ativar PRO
+      </button>
+    </div>
+  </div>
 
-<button onclick="location.href='ativar.html'" class="mt-6 bg-yellow-500 p-2 rounded">Ativar PRO</button>
+  <div class="section-title">🏆 Seus torneios</div>
+  <div id="lista-torneios"></div>
 
+  <div class="footer">
+    eFootball Torneio • Plataforma independente
+  </div>
 
-<script>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot } from 
+"https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from 
+"https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+
 const firebaseConfig = {
-apiKey: "AIzaSyAWic8GgxaPKjyFtIKH4KXj4J6A6bVOBg0",
-authDomain: "efootball-torneio.firebaseapp.com",
-projectId: "efootball-torneio",
-appId: "1:909084318349:web:a627eaf51f973b87df60c4"
+  apiKey: "AIzaSyAWic8GgxaPKjyFtIKH4KXj4J6A6bVOBg0",
+  authDomain: "efootball-torneio.firebaseapp.com",
+  projectId: "efootball-torneio",
+  storageBucket: "efootball-torneio.firebasestorage.app",
+  messagingSenderId: "909084318349",
+  appId: "1:909084318349:web:a627eaf51f973b87df60c4"
 };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-let uid;
 
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth();
 
-auth.onAuthStateChanged(u=>{
-if(!u) location.href='login.html';
-uid=u.uid;
-load();
+let userId = null;
+
+onAuthStateChanged(auth,user=>{
+  if(!user) location.href="index.html";
+  userId = user.uid;
+  carregarTorneios();
 });
 
+function carregarTorneios(){
+  onSnapshot(collection(db,"torneios"), snap=>{
+    const el = document.getElementById("lista-torneios");
+    const meus = snap.docs.filter(d=>d.data().owner === userId);
 
-function create(){
-db.collection('users').doc(uid).collection('tournaments').add({
-name:name.value,
-createdAt:firebase.firestore.FieldValue.serverTimestamp()
-});
+    el.innerHTML = meus.length === 0 
+      ? `<small>Nenhum torneio criado ainda.</small>`
+      : meus.map(d=>`
+        <div class="card">
+          <div>
+            <span>${d.data().nome}</span><br>
+            <small>${d.id}</small>
+          </div>
+          <button onclick="abrir('${d.id}')">Abrir</button>
+        </div>
+      `).join("");
+  });
 }
 
+window.criarTorneio = async ()=>{
+  const nome = prompt("Nome do torneio:");
+  if(!nome) return;
+  const doc = await addDoc(collection(db,"torneios"),{
+    nome,
+    owner:userId,
+    created:Date.now()
+  });
+  abrir(doc.id);
+}
 
-function load(){
-db.collection('users').doc(uid).collection('tournaments')
-.onSnapshot(s=>{
-list.innerHTML='';
-s.forEach(d=>{
-list.innerHTML+=`<li><a class='text-blue-400' href='torneio.html?id=${d.id}'>${d.data().name}</a></li>`;
-})
-})
+window.abrir = id=>{
+  window.location.href = `torneio.html?id=${id}`;
 }
 </script>
+
 </body>
 </html>
