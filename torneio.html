@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>eFootball Torneio</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --primary:#00ff88;
+  --bg:#05070a;
+  --card:#12161d;
+  --border:#222;
+  --text:#eee;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Montserrat',sans-serif;
+  padding-bottom:80px;
+}
+header{
+  text-align:center;
+  padding:20px;
+  border-bottom:2px solid var(--primary);
+  background:#000;
+}
+.container{
+  max-width:800px;
+  margin:auto;
+  padding:12px;
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px;
+  margin-bottom:15px;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+}
+th,td{
+  padding:8px;
+  text-align:center;
+  border-bottom:1px solid #222;
+}
+th{font-size:10px;color:#777}
+.name{text-align:left;font-weight:bold}
+.match{
+  display:flex;
+  justify-content:space-between;
+  background:#000;
+  padding:8px 10px;
+  margin-bottom:6px;
+  border-radius:6px;
+  font-size:11px;
+}
+.score{
+  background:var(--primary);
+  color:#000;
+  font-weight:900;
+  padding:2px 8px;
+  border-radius:4px;
+}
+.btn{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:10px;
+  font-weight:900;
+  cursor:pointer;
+}
+.btn-share{
+  background:#25D366;
+  color:#fff;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h2>🏆 eFootball Torneio</h2>
+</header>
+
+<div class="container">
+
+<div class="card">
+  <h4>📊 Classificação</h4>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th style="text-align:left">Jogador</th>
+        <th>P</th>
+        <th>V</th>
+        <th>E</th>
+        <th>D</th>
+        <th>SG</th>
+      </tr>
+    </thead>
+    <tbody id="tabela"></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h4>⚽ Jogos</h4>
+  <div id="jogos"></div>
+</div>
+
+<button class="btn btn-share" onclick="shareLink()">
+  <i class="fab fa-whatsapp"></i> Compartilhar link do torneio
+</button>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAWic8GgxaPKjyFtIKH4KXj4J6A6bVOBg0",
+  authDomain: "efootball-torneio.firebaseapp.com",
+  projectId: "efootball-torneio",
+  storageBucket: "efootball-torneio.firebasestorage.app",
+  messagingSenderId: "909084318349",
+  appId: "1:909084318349:web:a627eaf51f973b87df60c4"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let players = [];
+let matches = [];
+
+onSnapshot(collection(db,"jogadores"), snap=>{
+  players = snap.docs.map(d=>d.data());
+  renderTable();
+});
+
+onSnapshot(collection(db,"partidas"), snap=>{
+  matches = snap.docs.map(d=>d.data());
+  renderMatches();
+});
+
+function renderTable(){
+  const el = document.getElementById("tabela");
+  players.sort((a,b)=>b.pts-a.pts || b.sg-a.sg);
+  el.innerHTML = players.map((p,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td class="name">${p.nome}</td>
+      <td>${p.pts}</td>
+      <td>${p.v}</td>
+      <td>${p.e}</td>
+      <td>${p.d}</td>
+      <td>${p.sg}</td>
+    </tr>
+  `).join("");
+}
+
+function renderMatches(){
+  const el = document.getElementById("jogos");
+  el.innerHTML = matches.map(m=>`
+    <div class="match">
+      <span>${m.p1}</span>
+      <span class="score">${m.status==="done" ? `${m.g1} x ${m.g2}` : "VS"}</span>
+      <span>${m.p2}</span>
+    </div>
+  `).join("");
+}
+
+window.shareLink = ()=>{
+  const link = window.location.href;
+  const text = `🏆 *eFootball Torneio*\n\nAcompanhe os jogos e a tabela:\n${link}`;
+  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`);
+};
+</script>
+
+</body>
+</html>
