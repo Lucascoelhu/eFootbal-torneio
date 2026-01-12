@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+</head>
+<body class="bg-gray-900 text-white p-4">
+
+
+<h1 class="text-xl mb-4">Meus Torneios</h1>
+<input id="name" class="p-2 text-black rounded" placeholder="Nome do torneio" />
+<button onclick="create()" class="bg-blue-600 p-2 rounded ml-2">Criar</button>
+
+
+<ul id="list" class="mt-4"></ul>
+
+
+<button onclick="location.href='ativar.html'" class="mt-6 bg-yellow-500 p-2 rounded">Ativar PRO</button>
+
+
+<script>
+const firebaseConfig = {
+apiKey: "AIzaSyAWic8GgxaPKjyFtIKH4KXj4J6A6bVOBg0",
+authDomain: "efootball-torneio.firebaseapp.com",
+projectId: "efootball-torneio",
+appId: "1:909084318349:web:a627eaf51f973b87df60c4"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+let uid;
+
+
+auth.onAuthStateChanged(u=>{
+if(!u) location.href='login.html';
+uid=u.uid;
+load();
+});
+
+
+function create(){
+db.collection('users').doc(uid).collection('tournaments').add({
+name:name.value,
+createdAt:firebase.firestore.FieldValue.serverTimestamp()
+});
+}
+
+
+function load(){
+db.collection('users').doc(uid).collection('tournaments')
+.onSnapshot(s=>{
+list.innerHTML='';
+s.forEach(d=>{
+list.innerHTML+=`<li><a class='text-blue-400' href='torneio.html?id=${d.id}'>${d.data().name}</a></li>`;
+})
+})
+}
+</script>
+</body>
+</html>
