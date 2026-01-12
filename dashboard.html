@@ -23,37 +23,33 @@ let uid;
 onAuthStateChanged(auth, async (user) => {
   if (!user) location.href = "index.html";
   uid = user.uid;
-  loadTorneios();
+  load();
 });
 
-async function loadTorneios() {
+async function load() {
   const snap = await getDocs(collection(db, "users", uid, "torneios"));
   lista.innerHTML = snap.docs.map(d =>
-    `<li onclick="openTorneio('${d.id}')">${d.data().nome}</li>`
+    `<li onclick="openT('${d.id}')">${d.data().nome}</li>`
   ).join("");
 }
 
-window.createTorneio = async () => {
+window.openT = id => location.href = `torneio.html?tid=${id}`;
+
+window.createT = async () => {
   const nome = prompt("Nome do torneio");
   if (!nome) return;
-
   await addDoc(collection(db, "users", uid, "torneios"), {
     nome,
     plano: "FREE",
     criadoEm: Date.now()
   });
-
-  loadTorneios();
-};
-
-window.openTorneio = (id) => {
-  location.href = `torneio.html?tid=${id}`;
+  load();
 };
 </script>
 </head>
 <body>
 <h2>Meus Torneios</h2>
 <ul id="lista"></ul>
-<button onclick="createTorneio()">Criar Torneio</button>
+<button onclick="createT()">Criar Torneio</button>
 </body>
 </html>
