@@ -1,130 +1,95 @@
-<!DOCTYPE html>
-<html lang="pt-br">
+<!DOCTYPE html><html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>eFootball Torneio</title>
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
-
-<style>
-:root {
-  --primary:#00ff88;
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Torneio • eFootball</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet"><style>
+:root{
   --bg:#05070a;
-  --card:#12161d;
+  --card:#11151c;
   --border:#222;
+  --primary:#00ff88;
   --text:#eee;
 }
 *{box-sizing:border-box}
 body{
   margin:0;
+  font-family:'Montserrat',sans-serif;
   background:var(--bg);
   color:var(--text);
-  font-family:'Montserrat',sans-serif;
-  padding-bottom:80px;
 }
 header{
-  text-align:center;
   padding:20px;
   border-bottom:2px solid var(--primary);
-  background:#000;
+  text-align:center;
 }
 .container{
-  max-width:800px;
+  max-width:900px;
   margin:auto;
-  padding:12px;
+  padding:15px;
 }
 .card{
   background:var(--card);
   border:1px solid var(--border);
-  border-radius:12px;
-  padding:12px;
+  border-radius:18px;
+  padding:18px;
   margin-bottom:15px;
+  animation:fade .4s ease;
 }
-table{
+.card h3{margin:0 0 10px}
+input{
   width:100%;
-  border-collapse:collapse;
-  font-size:12px;
-}
-th,td{
-  padding:8px;
-  text-align:center;
-  border-bottom:1px solid #222;
-}
-th{font-size:10px;color:#777}
-.name{text-align:left;font-weight:bold}
-.match{
-  display:flex;
-  justify-content:space-between;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid var(--border);
   background:#000;
-  padding:8px 10px;
-  margin-bottom:6px;
-  border-radius:6px;
-  font-size:11px;
+  color:#fff;
+  margin-bottom:10px;
 }
-.score{
-  background:var(--primary);
-  color:#000;
-  font-weight:900;
-  padding:2px 8px;
-  border-radius:4px;
-}
-.btn{
+button{
   width:100%;
   padding:14px;
   border:none;
-  border-radius:10px;
+  border-radius:14px;
   font-weight:900;
   cursor:pointer;
 }
-.btn-share{
-  background:#25D366;
-  color:#fff;
+.btn{
+  background:var(--primary);
+  color:#000;
 }
-</style>
-</head>
-
-<body>
-
-<header>
-  <h2>🏆 eFootball Torneio</h2>
-</header>
-
-<div class="container">
-
-<div class="card">
-  <h4>📊 Classificação</h4>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th style="text-align:left">Jogador</th>
-        <th>P</th>
-        <th>V</th>
-        <th>E</th>
-        <th>D</th>
-        <th>SG</th>
-      </tr>
-    </thead>
-    <tbody id="tabela"></tbody>
-  </table>
-</div>
-
-<div class="card">
-  <h4>⚽ Jogos</h4>
-  <div id="jogos"></div>
-</div>
-
-<button class="btn btn-share" onclick="shareLink()">
-  <i class="fab fa-whatsapp"></i> Compartilhar link do torneio
-</button>
-
-</div>
-
-<script type="module">
+.player{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+  border-bottom:1px solid var(--border);
+}
+.player:last-child{border:none}
+.share{
+  background:#000;
+  color:var(--primary);
+  border:1px solid var(--border);
+}
+small{opacity:.6}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1}}
+</style></head>
+<body><header>
+  <h2 id="nomeTorneio">Carregando...</h2>
+  <small id="info"></small>
+</header><div class="container">  <div class="card" id="adminArea" style="display:none">
+    <h3>➕ Adicionar jogador</h3>
+    <input id="nomeJogador" placeholder="Nome do jogador">
+    <button class="btn" onclick="addJogador()">Adicionar</button>
+  </div>  <div class="card">
+    <h3>⚽ Jogadores</h3>
+    <div id="listaJogadores"></div>
+  </div>  <div class="card">
+    <button class="share" onclick="compartilhar()">🔗 Compartilhar torneio</button>
+  </div></div><script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAWic8GgxaPKjyFtIKH4KXj4J6A6bVOBg0",
@@ -137,53 +102,67 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth();
 
-let players = [];
-let matches = [];
+const params = new URLSearchParams(window.location.search);
+const torneioId = params.get("id");
 
-onSnapshot(collection(db,"jogadores"), snap=>{
-  players = snap.docs.map(d=>d.data());
-  renderTable();
+const torneioRef = doc(db,"torneios",torneioId);
+
+let dono = false;
+
+onAuthStateChanged(auth, async user=>{
+  const snap = await getDoc(torneioRef);
+  if(!snap.exists()) return alert("Torneio não encontrado");
+
+  document.getElementById("nomeTorneio").innerText = snap.data().nome;
+  document.getElementById("info").innerText = "ID: " + torneioId;
+
+  if(user && snap.data().owner === user.uid){
+    dono = true;
+    document.getElementById("adminArea").style.display = "block";
+  }
 });
 
-onSnapshot(collection(db,"partidas"), snap=>{
-  matches = snap.docs.map(d=>d.data());
-  renderMatches();
-});
+window.addJogador = async ()=>{
+  if(!dono) return;
+  const nome = document.getElementById("nomeJogador").value.trim();
+  if(!nome) return;
 
-function renderTable(){
-  const el = document.getElementById("tabela");
-  players.sort((a,b)=>b.pts-a.pts || b.sg-a.sg);
-  el.innerHTML = players.map((p,i)=>`
-    <tr>
-      <td>${i+1}</td>
-      <td class="name">${p.nome}</td>
-      <td>${p.pts}</td>
-      <td>${p.v}</td>
-      <td>${p.e}</td>
-      <td>${p.d}</td>
-      <td>${p.sg}</td>
-    </tr>
-  `).join("");
-}
+  await addDoc(collection(db,"torneios",torneioId,"jogadores"),{
+    nome,
+    pontos:0,
+    vitorias:0,
+    empates:0,
+    derrotas:0,
+    criadoEm:Date.now()
+  });
 
-function renderMatches(){
-  const el = document.getElementById("jogos");
-  el.innerHTML = matches.map(m=>`
-    <div class="match">
-      <span>${m.p1}</span>
-      <span class="score">${m.status==="done" ? `${m.g1} x ${m.g2}` : "VS"}</span>
-      <span>${m.p2}</span>
-    </div>
-  `).join("");
-}
-
-window.shareLink = ()=>{
-  const link = window.location.href;
-  const text = `🏆 *eFootball Torneio*\n\nAcompanhe os jogos e a tabela:\n${link}`;
-  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`);
+  document.getElementById("nomeJogador").value="";
 };
-</script>
 
-</body>
+onSnapshot(
+  collection(db,"torneios",torneioId,"jogadores"),
+  snap=>{
+    document.getElementById("listaJogadores").innerHTML = snap.empty
+      ? "<small>Nenhum jogador ainda</small>"
+      : snap.docs.map(d=>`
+        <div class="player">
+          <strong>${d.data().nome}</strong>
+          <small>${d.data().pontos} pts</small>
+        </div>
+      `).join("");
+  }
+);
+
+window.compartilhar = ()=>{
+  const link = window.location.href;
+  if(navigator.share){
+    navigator.share({title:"Torneio eFootball",url:link});
+  }else{
+    navigator.clipboard.writeText(link);
+    alert("Link copiado!");
+  }
+};
+</script></body>
 </html>
