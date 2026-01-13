@@ -16,9 +16,7 @@
         
         .container { max-width: 800px; margin: auto; padding: 12px; }
 
-        /* AUTH SECTION DESIGN */
-        #auth-section { margin-top: 10px; font-size: 11px; font-weight: 700; }
-        .auth-btn { background: none; border: none; color: var(--primary); cursor: pointer; font-weight: 900; text-transform: uppercase; padding: 5px 10px; }
+        #auth-info { margin-top: 12px; font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
 
         /* TABELA */
         .leaderboard-card { background: var(--card); border-radius: 12px; padding: 10px; margin-bottom: 20px; border: 1px solid var(--border); overflow-x: auto; }
@@ -29,27 +27,6 @@
 
         .section-title { font-size: 12px; font-weight: 900; color: var(--primary); margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; padding: 0 5px; }
         
-        /* TICKER */
-        .ticker-wrapper {
-            background: linear-gradient(90deg, rgba(0,255,136,0.05) 0%, rgba(5,7,10,1) 50%, rgba(0,255,136,0.05) 100%);
-            border-top: 1px solid rgba(0,255,136,0.2);
-            border-bottom: 1px solid rgba(0,255,136,0.2);
-            margin: 15px -12px;
-            padding: 12px 0;
-            overflow: hidden;
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        .ticker-label {
-            position: absolute; left: 0; z-index: 10; background: var(--primary); color: #000; font-size: 10px; font-weight: 900; padding: 5px 15px; text-transform: uppercase; clip-path: polygon(0 0, 85% 0, 100% 100%, 0% 100%);
-        }
-        .ticker-content { display: inline-block; white-space: nowrap; padding-left: 100%; animation: ticker-scroll 25s linear infinite; }
-        .ticker-match { display: inline-flex; align-items: center; gap: 15px; margin-right: 60px; font-size: 12px; font-weight: 700; color: #fff; }
-        .ticker-match .vs-badge { background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; font-size: 9px; color: var(--primary); }
-
-        @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-
         /* RODADAS */
         .results-scroll-container { display: flex; overflow-x: auto; gap: 15px; padding: 5px 5px 15px; scroll-snap-type: x mandatory; scrollbar-width: none; }
         .rodada-group { min-width: 280px; background: var(--card); border-radius: 10px; padding: 12px; border: 1px solid var(--border); scroll-snap-align: start; flex-shrink: 0; }
@@ -79,12 +56,11 @@
     </style>
 </head>
 <body>
-<body>
 
 <header>
     <div style="font-size: 18px; font-weight: 900; letter-spacing: -1px;">EFOOTBALL <span style="color:var(--primary)">CAMPEONATO</span></div>
     <span class="live-badge">● AO VIVO</span>
-    <div id="auth-info" style="margin-top: 10px; font-size: 11px;"></div>
+    <div id="auth-info"></div>
 </header>
 
 <div id="login-screen" style="position: fixed; inset: 0; background: var(--bg); z-index: 20000; display: flex; align-items: center; justify-content: center; padding: 20px;">
@@ -188,99 +164,85 @@
     let currentMatchId = null;
     let unsubP = null;
     let unsubM = null;
-    
-    // --- COMPARTILHAMENTO WHATSAPP ---
-window.shareResultsWhatsApp = () => {
-    const tName = document.getElementById('tournament-name').value || "MEU TORNEIO";
-    let text = `🏆 *${tName.toUpperCase()}* 🏆\n\n*RODADAS EM ANDAMENTO:*\n`;
-    
-    // Agrupa por rodada igual ao seu renderer
-    const rounds = {};
-    allMatches.forEach(m => {
-        const label = `RODADA ${m.rodada} (${m.turno === 1 ? 'IDA' : 'VOLTA'})`;
-        if(!rounds[label]) rounds[label] = [];
-        rounds[label].push(`${m.p1} ${m.status === 'done' ? m.g1 : ''} vs ${m.status === 'done' ? m.g2 : ''} ${m.p2}`);
-    });
 
-    Object.keys(rounds).forEach(r => {
-        text += `\n📍 *${r}*\n` + rounds[r].join('\n') + `\n`;
-    });
+    // --- WHATSAPP ---
+    window.shareResultsWhatsApp = () => {
+        const tName = document.getElementById('tournament-name').value || "MEU TORNEIO";
+        let text = `🏆 *${tName.toUpperCase()}* 🏆\n\n*RODADAS EM ANDAMENTO:*\n`;
+        const rounds = {};
+        allMatches.forEach(m => {
+            const label = `RODADA ${m.rodada} (${m.turno === 1 ? 'IDA' : 'VOLTA'})`;
+            if(!rounds[label]) rounds[label] = [];
+            rounds[label].push(`${m.p1} ${m.status === 'done' ? m.g1 : ''} vs ${m.status === 'done' ? m.g2 : ''} ${m.p2}`);
+        });
+        Object.keys(rounds).forEach(r => { text += `\n📍 *${r}*\n` + rounds[r].join('\n') + `\n`; });
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+    };
 
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
-};
+    window.shareTableWhatsApp = () => {
+        const tName = document.getElementById('tournament-name').value || "MEU TORNEIO";
+        let text = `📊 *CLASSIFICAÇÃO: ${tName.toUpperCase()}*\n\n`;
+        globalPlayers.forEach((p, i) => {
+            text += `${i+1}º ${p.nome.padEnd(12)} | ${p.pts}pts (${p.v}V / SG:${p.sg})\n`;
+        });
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+    };
 
-window.shareTableWhatsApp = () => {
-    const tName = document.getElementById('tournament-name').value || "MEU TORNEIO";
-    let text = `📊 *CLASSIFICAÇÃO: ${tName.toUpperCase()}*\n\n`;
-    
-    globalPlayers.forEach((p, i) => {
-        text += `${i+1}º ${p.nome.padEnd(12)} | ${p.pts}pts (${p.v}V / SG:${p.sg})\n`;
-    });
+    // --- JOGADORES ---
+    window.deletePlayer = async (id) => {
+        if(confirm("Remover este jogador?")) {
+            await deleteDoc(doc(db, "jogadores", id));
+        }
+    };
 
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
-};
+    window.editPlayer = async (id, antigoNome) => {
+        const novoNome = prompt("Novo nome para " + antigoNome + ":", antigoNome);
+        if (!novoNome || novoNome.trim() === "" || novoNome === antigoNome) return;
 
-// --- APAGAR JOGADOR INDIVIDUAL ---
-window.deletePlayer = async (id) => {
-    if(confirm("Remover este jogador?")) {
-        await deleteDoc(doc(db, "jogadores", id));
-    }
-};
+        try {
+            const batch = writeBatch(db);
+            batch.update(doc(db, "jogadores", id), { nome: novoNome.trim() });
+            allMatches.forEach(m => {
+                if (m.p1 === antigoNome) batch.update(doc(db, "partidas", m.id), { p1: novoNome.trim() });
+                if (m.p2 === antigoNome) batch.update(doc(db, "partidas", m.id), { p2: novoNome.trim() });
+            });
+            await batch.commit();
+            alert("Nome atualizado!");
+        } catch (e) { alert("Erro ao editar."); }
+    };
 
-// --- ATUALIZA LISTA DE JOGADORES NO PAINEL ---
     function updateAdminList() {
         const list = document.getElementById("admin-players-list");
         list.innerHTML = globalPlayers.map(p => `
-            <div style="display:flex; justify-content:space-between; align-items:center; background:#1a1f26;     padding:8px 12px; border-radius:5px; margin-bottom:5px; font-size:11px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#1a1f26; padding:8px 12px; border-radius:5px; margin-bottom:5px; font-size:11px;">
                 <span>${p.nome}</span>
-                <i class="fas fa-trash" style="color:var(--accent); cursor:pointer;" onclick="deletePlayer    ('${p.id}')"></i>
+                <div style="display:flex; gap:12px;">
+                    <i class="fas fa-edit" style="color:var(--gold); cursor:pointer;" onclick="editPlayer('${p.id}', '${p.nome}')"></i>
+                    <i class="fas fa-trash" style="color:var(--accent); cursor:pointer;" onclick="deletePlayer('${p.id}')"></i>
+                </div>
             </div>
         `).join('');
     }
-    
+
     // --- AUTENTICAÇÃO ---
     window.handleAuth = async (mode) => {
-    const email = document.getElementById('auth-email').value;
-    const pass = document.getElementById('auth-pass').value;
-    const errorDiv = document.getElementById('auth-error');
-    errorDiv.style.color = "var(--primary)"; // Cor de "carregando"
-    errorDiv.innerText = "Processando...";
+        const email = document.getElementById('auth-email').value;
+        const pass = document.getElementById('auth-pass').value;
+        const errorDiv = document.getElementById('auth-error');
+        errorDiv.innerText = "Processando...";
 
-    if(!email || !pass) { 
-        errorDiv.style.color = "var(--accent)";
-        errorDiv.innerText = "Preencha todos os campos"; 
-        return; 
-    }
+        if(!email || !pass) { errorDiv.innerText = "Preencha tudo"; return; }
 
-    try {
-        if(mode === 'signup') {
-            await createUserWithEmailAndPassword(auth, email, pass);
-            alert("Conta criada com sucesso!");
-        } else {
-            await signInWithEmailAndPassword(auth, email, pass);
-        }
-    } catch (e) { 
-        errorDiv.style.color = "var(--accent)"; // Cor de erro (vermelho)
-        
-        // Tradução dos erros comuns do Firebase
-        switch (e.code) {
-            case 'auth/invalid-login-credentials':
-                errorDiv.innerText = "E-mail ou senha incorretos.";
-                break;
-            case 'auth/email-already-in-use':
-                errorDiv.innerText = "Este e-mail já está cadastrado.";
-                break;
-            case 'auth/invalid-email':
-                errorDiv.innerText = "Formato de e-mail inválido.";
-                break;
-            case 'auth/weak-password':
-                errorDiv.innerText = "A senha deve ter no mínimo 6 caracteres.";
-                break;
-            default:
-                errorDiv.innerText = "Erro: " + e.message;
-        }
-    }
-};
+        try {
+            if(mode === 'signup') {
+                await createUserWithEmailAndPassword(auth, email, pass);
+                alert("Conta criada!");
+            } else {
+                await signInWithEmailAndPassword(auth, email, pass);
+            }
+        } catch (e) { errorDiv.innerText = "Erro: " + e.message; }
+    };
+
     window.logout = () => signOut(auth);
 
     onAuthStateChanged(auth, (user) => {
@@ -292,7 +254,8 @@ window.deletePlayer = async (id) => {
             currentUser = user;
             loginScreen.style.display = 'none';
             adminPanel.style.display = 'block';
-            authInfo.innerHTML = `${user.email.split('@')[0]} | <span onclick="logout()" style="color:var(--primary); cursor:pointer; font-weight:bold;">SAIR</span>`;
+            const userName = user.email.split('@')[0];
+            authInfo.innerHTML = `Olá, <span style="color:var(--primary); font-weight:900;">${userName}</span> | <span onclick="logout()" style="text-decoration:underline; cursor:pointer; margin-left:8px; opacity:0.7;">SAIR</span>`;
             startSync(user.uid);
         } else {
             currentUser = null;
@@ -320,39 +283,23 @@ window.deletePlayer = async (id) => {
         });
     }
 
-    function resetLocalData() {
-        globalPlayers = []; allMatches = [];
-        renderLeaderboard(); renderResultsByRound();
-    }
+    function resetLocalData() { globalPlayers = []; allMatches = []; renderLeaderboard(); renderResultsByRound(); }
 
     // --- LÓGICA DO TORNEIO ---
-
     window.addPlayer = async () => {
-    const nameInput = document.getElementById("new-player-name");
-    const n = nameInput.value.trim();
-    
-    // Verifica se há um nome e se o usuário está logado
-    if(n && currentUser) {
-        try {
+        const nameInput = document.getElementById("new-player-name");
+        const n = nameInput.value.trim();
+        if(n && currentUser) {
             await addDoc(collection(db, "jogadores"), { 
-                nome: n, 
-                pts: 0, v: 0, e: 0, d: 0, sg: 0, gp: 0, 
-                ownerId: currentUser.uid // Isso é essencial para a segurança
+                nome: n, pts: 0, v: 0, e: 0, d: 0, sg: 0, gp: 0, ownerId: currentUser.uid 
             });
             nameInput.value = "";
-            console.log("Jogador adicionado com sucesso!");
-        } catch (error) {
-            console.error("Erro ao adicionar:", error);
-            alert("Erro ao salvar jogador. Verifique as regras do banco de dados.");
         }
-    } else {
-        alert("Digite um nome ou verifique se está logado.");
-    }
-};
+    };
 
     window.sortearTorneio = async () => {
-        if(globalPlayers.length < 2) return alert("Adicione pelo menos 2 jogadores.");
-        if(!confirm("Gerar nova tabela? Partidas atuais serão apagadas.")) return;
+        if(globalPlayers.length < 2) return alert("Mínimo 2 jogadores");
+        if(!confirm("Gerar nova tabela? Jogos atuais serão apagados.")) return;
 
         const batch = writeBatch(db);
         const mSnap = await getDocs(query(collection(db, "partidas"), where("ownerId", "==", currentUser.uid)));
@@ -385,13 +332,12 @@ window.deletePlayer = async (id) => {
         document.getElementById('input-g1').value = m.status === 'done' ? m.g1 : "";
         document.getElementById('input-g2').value = m.status === 'done' ? m.g2 : "";
         document.getElementById('score-modal').style.display = 'flex';
-        document.getElementById('input-g1').focus();
     };
 
     window.saveScore = async () => {
         const g1 = parseInt(document.getElementById('input-g1').value);
         const g2 = parseInt(document.getElementById('input-g2').value);
-        if(isNaN(g1) || isNaN(g2)) return alert("Informe o placar completo.");
+        if(isNaN(g1) || isNaN(g2)) return alert("Preencha o placar");
         
         await updateDoc(doc(db, "partidas", currentMatchId), { g1, g2, status: 'done' });
         closeScoreModal();
@@ -437,16 +383,13 @@ window.deletePlayer = async (id) => {
     function renderResultsByRound() {
         const container = document.getElementById("results-by-round");
         if(allMatches.length === 0) { container.innerHTML = ""; return; }
-        
         const groups = {};
         allMatches.forEach(m => {
             const label = `RODADA ${m.rodada} (${m.turno === 1 ? 'IDA' : 'VOLTA'})`;
             if(!groups[label]) groups[label] = { turno: m.turno, rodada: m.rodada, games: [] };
             groups[label].games.push(m);
         });
-
         const sortedLabels = Object.keys(groups).sort((a,b) => groups[a].turno - groups[b].turno || groups[a].rodada - groups[b].rodada);
-        
         container.innerHTML = sortedLabels.map(label => `
             <div class="rodada-group">
                 <div class="rodada-label">${label}</div>
@@ -468,69 +411,41 @@ window.deletePlayer = async (id) => {
         if(el.style.display === 'block') renderMatchesByPlayer();
     };
 
-    // Linkando as demais funções ao window para o HTML acessar
     window.confirmReset = async () => {
-    if(!confirm("LIMPAR TUDO? Isso apagará todos os jogadores e jogos para criar um NOVO torneio.")) return;
-    const batch = writeBatch(db);
-    
-    const m = await getDocs(query(collection(db, "partidas"), where("ownerId", "==", currentUser.uid)));
-    const p = await getDocs(query(collection(db, "jogadores"), where("ownerId", "==", currentUser.uid)));
-    
+        if(!confirm("LIMPAR TUDO? Apaga jogadores e jogos.")) return;
+        const batch = writeBatch(db);
+        const m = await getDocs(query(collection(db, "partidas"), where("ownerId", "==", currentUser.uid)));
+        const p = await getDocs(query(collection(db, "jogadores"), where("ownerId", "==", currentUser.uid)));
         m.forEach(d => batch.delete(d.ref));
-        p.forEach(d => batch.delete(d.ref)); // Agora deleta os jogadores também
-    
+        p.forEach(d => batch.delete(d.ref));
         await batch.commit();
-        document.getElementById('tournament-name').value = ""; // Limpa nome do torneio
-        alert("Torneio resetado!");
+        alert("Resetado!");
     };
 
-    // (As funções de renderMatchesByPlayer, WhatsApp e adminList seguem a mesma lógica anterior, apenas filtradas pelo ownerId já garantido no startSync)
     window.renderMatchesByPlayer = () => {
-    const container = document.getElementById("matches-by-player");
-    const search = document.getElementById("search-input").value.toLowerCase();
-    
-    // Filtra e ordena os jogadores conforme o original
-    let players = [...globalPlayers]
-        .sort((a,b) => a.nome.localeCompare(b.nome))
-        .filter(p => p.nome.toLowerCase().includes(search));
-
-    if (players.length === 0) {
-        container.innerHTML = "<p style='text-align:center; opacity:0.5; font-size:11px;'>Nenhum jogador encontrado.</p>";
-        return;
-    }
-
-    container.innerHTML = players.map(player => {
-        // Busca as partidas onde o jogador participa
-        const pMatches = allMatches.filter(m => m.p1 === player.nome || m.p2 === player.nome);
-        const mIda = pMatches.filter(m => m.turno === 1).sort((a,b) => a.rodada - b.rodada);
-        const mVolta = pMatches.filter(m => m.turno === 2).sort((a,b) => a.rodada - b.rodada);
-
-        const renderM = (m) => `
-            <div style="font-size:9px; color:#777; margin: 12px 0 4px; font-weight:800; padding-left:5px;">RODADA ${m.rodada}</div>
-            <div class="match-item">
-                <div class="p-name" style="text-align:right; color:${m.p1 === player.nome ? 'var(--primary)' : '#fff'}">
-                    ${m.p1} <span class="mando-badge casa">CASA</span>
-                </div>
-                <span class="p-score ${m.status !== 'done' ? 'open' : ''}" onclick="openScoreModal('${m.id}')">
-                    ${m.status === 'done' ? `${m.g1} - ${m.g2}` : 'VS'}
-                </span>
-                <div class="p-name" style="text-align:left; color:${m.p2 === player.nome ? 'var(--primary)' : '#fff'}">
-                    <span class="mando-badge fora">FORA</span> ${m.p2}
-                </div>
-            </div>`;
-
-        return `
-            <button class="player-header" onclick="const el = document.getElementById('c-${player.id}'); el.style.display = el.style.display === 'none' ? 'block' : 'none'">
-                ${player.nome.toUpperCase()} <i class="fas fa-chevron-down"></i>
-            </button>
-            <div class="player-content" id="c-${player.id}" style="display:none">
-                <div class="turno-header">PRIMEIRO TURNO (IDA)</div>
-                ${mIda.length ? mIda.map(renderM).join('') : '<p style="font-size:10px; padding:10px; opacity:0.5;">Sem jogos.</p>'}
-                <div class="turno-header">SEGUNDO TURNO (VOLTA)</div>
-                ${mVolta.length ? mVolta.map(renderM).join('') : '<p style="font-size:10px; padding:10px; opacity:0.5;">Sem jogos.</p>'}
-            </div>`;
-    }).join('');
-};
+        const container = document.getElementById("matches-by-player");
+        const search = document.getElementById("search-input").value.toLowerCase();
+        let players = [...globalPlayers].sort((a,b) => a.nome.localeCompare(b.nome)).filter(p => p.nome.toLowerCase().includes(search));
+        
+        container.innerHTML = players.map(player => {
+            const pMatches = allMatches.filter(m => m.p1 === player.nome || m.p2 === player.nome);
+            const mIda = pMatches.filter(m => m.turno === 1).sort((a,b) => a.rodada - b.rodada);
+            const mVolta = pMatches.filter(m => m.turno === 2).sort((a,b) => a.rodada - b.rodada);
+            const renderM = (m) => `
+                <div style="font-size:9px; color:#777; margin: 12px 0 4px; font-weight:800; padding-left:5px;">RODADA ${m.rodada}</div>
+                <div class="match-item">
+                    <div class="p-name" style="text-align:right; color:${m.p1 === player.nome ? 'var(--primary)' : '#fff'}">${m.p1} <span class="mando-badge casa">CASA</span></div>
+                    <span class="p-score ${m.status !== 'done' ? 'open' : ''}" onclick="openScoreModal('${m.id}')">${m.status === 'done' ? `${m.g1} - ${m.g2}` : 'VS'}</span>
+                    <div class="p-name" style="text-align:left; color:${m.p2 === player.nome ? 'var(--primary)' : '#fff'}"><span class="mando-badge fora">FORA</span> ${m.p2}</div>
+                </div>`;
+            return `
+                <button class="player-header" onclick="const el = document.getElementById('c-${player.id}'); el.style.display = el.style.display === 'none' ? 'block' : 'none'">${player.nome.toUpperCase()} <i class="fas fa-chevron-down"></i></button>
+                <div class="player-content" id="c-${player.id}" style="display:none">
+                    <div class="turno-header">IDA</div>${mIda.map(renderM).join('')}
+                    <div class="turno-header">VOLTA</div>${mVolta.map(renderM).join('')}
+                </div>`;
+        }).join('');
+    };
 </script>
 </body>
 </html>
