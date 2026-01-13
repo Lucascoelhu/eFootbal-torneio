@@ -103,7 +103,9 @@
     </button>
     
     <div id="confrontos-content" style="display:none; margin-top:15px;">
-        <input type="text" id="search-input" style="width:100%; padding:14px; background:#000; border:1px solid #333; color:#fff; border-radius:8px; margin-bottom:15px;" placeholder="Filtrar por nome..." onkeyup="renderMatchesByPlayer()">
+        <div id="search-container">
+             <input type="text" id="search-input" style="width:100%; padding:14px; background:#000; border:1px solid #333; color:#fff; border-radius:8px; margin-bottom:15px;" placeholder="Filtrar por nome..." onkeyup="renderMatchesByPlayer()">
+        </div>
         <div id="matches-by-player"></div>
     </div>
 
@@ -116,7 +118,7 @@
 
         <div style="margin-bottom: 15px;">
             <input type="text" id="tournament-name" placeholder="NOME DO TORNEIO (Ex: Copa Master)" 
-                style="width:100%; padding:10px; background:#000; border:1px solid var(--primary); color:var(--primary); border-radius:5px; font-weight:900; text-transform:uppercase; font-size:10px;"> 
+                style="width:100%; padding:10px; background:#000; border:1px solid var(--primary); color:var(--primary); border-radius:5px; font-weight:900; text-transform:uppercase; font-size:10px;">
         </div>
         <div style="display: flex; gap: 5px; margin-bottom: 10px;">
             <input type="text" id="new-player-name" placeholder="Nome do Jogador" style="flex:1; padding:10px; background:#000; border:1px solid #333; color:#fff; border-radius:5px;">
@@ -128,12 +130,12 @@
             <button onclick="confirmReset()" style="background:#444; border:none; color:#fff; padding:10px; font-weight:bold; border-radius:5px;">LIMPAR TUDO</button>
         </div>
         <button class="btn-adm" style="background:#25D366; color:white;" onclick="shareResultsWhatsApp()"><i class="fab fa-whatsapp"></i> COMPARTILHAR RODADAS</button>
-        <button class="btn-adm" style="background:#007bff; color:white;" onclick="shareTableWhatsApp()"><i class="fab fa-whatsapp"></i> COMPARTILHAR RANKING</button>
+        <button id="btn-share-table" class="btn-adm" style="background:#007bff; color:white;" onclick="shareTableWhatsApp()"><i class="fab fa-whatsapp"></i> COMPARTILHAR RANKING</button>
 
         <hr style="border:0; border-top: 1px solid #222; margin: 20px 0;">
         <div id="pro-status-area" style="text-align: center; padding: 12px; background: rgba(0,255,136,0.05); border: 1px dashed var(--primary); border-radius: 8px;">
             <div id="status-text" style="font-size: 11px; font-weight: 900; color: var(--primary);">MODO FREE ATIVO</div>
-            <p id="limit-info" style="font-size: 9px; margin: 5px 0 10px; opacity: 0.7;">Limite: Máximo 8 jogadores</p>
+            <p id="limit-info" style="font-size: 9px; margin: 5px 0 10px; opacity: 0.7;">Limite: Máximo 4 jogadores</p>
             <button onclick="toggleProSection()" style="background: var(--primary); color: #000; border: none; padding: 6px 15px; border-radius: 4px; font-size: 10px; font-weight: 900; cursor: pointer;">UPGRADE PARA PRO</button>
         </div>
 
@@ -146,7 +148,7 @@
                 <i class="fas fa-copy" style="position: absolute; right: 10px; cursor: pointer; color: var(--gold);" onclick="navigator.clipboard.writeText('SUA_CHAVE_PIX_AQUI'); alert('Chave PIX copiada!')"></i>
             </div>
 
-            <button onclick="window.open('https://wa.me/SEUNUMERO?text=Envio aqui o comprovante para ativar meu PRO!')" style="width:100%; padding:10px; background:#25D366; color:white; border:none; border-radius:5px; font-weight:bold; font-size:10px; margin-bottom:15px; cursor: pointer;">
+            <button onclick="window.open('https://wa.me/5512988600188?text=Envio aqui o comprovante para ativar meu PRO!')" style="width:100%; padding:10px; background:#25D366; color:white; border:none; border-radius:5px; font-weight:bold; font-size:10px; margin-bottom:15px; cursor: pointer;">
                 <i class="fab fa-whatsapp"></i> ENVIAR COMPROVANTE
             </button>
 
@@ -204,6 +206,75 @@
     let isSpectator = false;
     let isPro = false;
 
+    // --- LÓGICA DE STATUS PRO INDIVIDUAL ---
+    async function checkProStatus(uid) {
+        // Reset inicial
+        isPro = false;
+        document.getElementById('pro-status-area').style.background = "rgba(0,255,136,0.05)";
+        document.getElementById('pro-status-area').style.borderColor = "var(--primary)";
+        document.getElementById('status-text').innerHTML = "MODO FREE ATIVO";
+        document.getElementById('status-text').style.color = "var(--primary)";
+        document.getElementById('limit-info').innerText = "Limite: Máximo 4 jogadores";
+        document.querySelector('#pro-status-area button').style.display = 'block';
+        
+        // Bloqueios visuais Modo Free
+        document.getElementById('search-container').style.opacity = "0.5";
+        document.getElementById('search-input').placeholder = "BUSCA (SOMENTE PRO)";
+        document.getElementById('search-input').disabled = true;
+        document.getElementById('btn-share-table').style.display = "none";
+
+        const docRef = doc(db, "usuarios", uid);
+        onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists() && docSnap.data().isPro === true) {
+                isPro = true;
+                document.getElementById('pro-status-area').style.background = "rgba(255, 170, 0, 0.1)";
+                document.getElementById('pro-status-area').style.borderColor = "var(--gold)";
+                document.getElementById('status-text').innerHTML = "⭐ MODO PRO ATIVO";
+                document.getElementById('status-text').style.color = "var(--gold)";
+                document.getElementById('limit-info').innerText = "Limite: Jogadores Ilimitados";
+                document.querySelector('#pro-status-area button').style.display = 'none';
+                
+                // Desbloqueios Modo Pro
+                document.getElementById('search-container').style.opacity = "1";
+                document.getElementById('search-input').placeholder = "Filtrar por nome...";
+                document.getElementById('search-input').disabled = false;
+                document.getElementById('btn-share-table').style.display = "flex";
+            }
+        });
+    }
+
+    // --- AUTH LISTENER ---
+    onAuthStateChanged(auth, async (user) => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewId = urlParams.get('view');
+
+        if (viewId) {
+            isSpectator = true;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('spectator-badge').style.display = 'block';
+            startSync(viewId);
+        } else if(user) {
+            currentUser = user;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'block';
+            const userName = user.email.split('@')[0];
+            document.getElementById('auth-info').innerHTML = `Olá, <span style="color:var(--primary); font-weight:900;">${userName}</span> | <span onclick="logout()" style="text-decoration:underline; cursor:pointer; margin-left:8px; opacity:0.7;">SAIR</span>`;
+            
+            checkProStatus(user.uid);
+            startSync(user.uid);
+        } else {
+            currentUser = null;
+            isPro = false;
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('auth-info').innerHTML = "";
+            if(unsubP) unsubP();
+            if(unsubM) unsubM();
+            resetLocalData();
+        }
+    });
+
     // --- LOGICA SPECTADOR ---
     window.copySpectatorLink = () => {
         if(!currentUser) return;
@@ -228,6 +299,7 @@
     };
 
     window.shareTableWhatsApp = () => {
+        if(!isPro) return alert("Função disponível apenas no MODO PRO!");
         const tName = document.getElementById('tournament-name').value || "MEU TORNEIO";
         let text = `📊 *CLASSIFICAÇÃO: ${tName.toUpperCase()}*\n\n`;
         globalPlayers.forEach((p, i) => {
@@ -272,7 +344,7 @@
         `).join('');
     }
 
-    // --- AUTENTICAÇÃO E INICIALIZAÇÃO ---
+    // --- AUTENTICAÇÃO ---
     window.handleAuth = async (mode) => {
         const email = document.getElementById('auth-email').value;
         const pass = document.getElementById('auth-pass').value;
@@ -293,47 +365,6 @@
 
     window.logout = () => signOut(auth);
 
-    onAuthStateChanged(auth, async (user) => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const viewId = urlParams.get('view');
-
-        if (viewId) {
-            isSpectator = true;
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('admin-panel').style.display = 'none';
-            document.getElementById('spectator-badge').style.display = 'block';
-            startSync(viewId);
-        } else if(user) {
-            currentUser = user;
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('admin-panel').style.display = 'block';
-            const userName = user.email.split('@')[0];
-            document.getElementById('auth-info').innerHTML = `Olá, <span style="color:var(--primary); font-weight:900;">${userName}</span> | <span onclick="logout()" style="text-decoration:underline; cursor:pointer; margin-left:8px; opacity:0.7;">SAIR</span>`;
-            
-            // Checar status PRO
-            onSnapshot(doc(db, "usuarios", user.uid), (docSnap) => {
-                if(docSnap.exists() && docSnap.data().isPro) {
-                    isPro = true;
-                    document.getElementById('pro-status-area').style.background = "rgba(255, 170, 0, 0.1)";
-                    document.getElementById('pro-status-area').style.borderColor = "var(--gold)";
-                    document.getElementById('status-text').innerHTML = "⭐ MODO PRO ATIVO";
-                    document.getElementById('status-text').style.color = "var(--gold)";
-                    document.getElementById('limit-info').innerText = "Limite: Jogadores Ilimitados";
-                    document.querySelector('#pro-status-area button').style.display = 'none';
-                }
-            });
-
-            startSync(user.uid);
-        } else {
-            document.getElementById('login-screen').style.display = 'flex';
-            document.getElementById('admin-panel').style.display = 'none';
-            document.getElementById('auth-info').innerHTML = "";
-            if(unsubP) unsubP();
-            if(unsubM) unsubM();
-            resetLocalData();
-        }
-    });
-
     function startSync(uid) {
         unsubP = onSnapshot(query(collection(db, "jogadores"), where("ownerId", "==", uid)), (snap) => {
             globalPlayers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -353,8 +384,9 @@
 
     // --- LÓGICA DO TORNEIO ---
     window.addPlayer = async () => {
-        if(!isPro && globalPlayers.length >= 8) {
-            alert("Limite de 8 jogadores no MODO FREE atingido! Ative o PRO para adicionar jogadores ilimitados.");
+        // NOVO LIMITE DE 4 JOGADORES NO FREE
+        if(!isPro && globalPlayers.length >= 4) {
+            alert("Limite de 4 jogadores no MODO FREE atingido! Ative o PRO para adicionar jogadores ilimitados.");
             toggleProSection();
             return;
         }
@@ -386,14 +418,25 @@
                 const p1 = p[i]; const p2 = p[n - 1 - i];
                 if (p1.id !== "bye" && p2.id !== "bye") {
                     const matchData = { g1:0, g2:0, status:'open', rodada: r + 1, ownerId: currentUser.uid };
+                    
+                    // TURNO 1 (IDA) - DISPONÍVEL PARA TODOS
                     batch.set(doc(collection(db, "partidas")), { ...matchData, p1: p1.nome, p2: p2.nome, turno: 1 });
-                    batch.set(doc(collection(db, "partidas")), { ...matchData, p1: p2.nome, p2: p1.nome, turno: 2 });
+                    
+                    // TURNO 2 (VOLTA) - APENAS PARA MODO PRO
+                    if(isPro) {
+                        batch.set(doc(collection(db, "partidas")), { ...matchData, p1: p2.nome, p2: p1.nome, turno: 2 });
+                    }
                 }
             }
             p.splice(1, 0, p.pop());
         }
         await batch.commit();
-        alert("Campeonato Gerado!");
+        
+        if(!isPro) {
+            alert("Campeonato Gerado (Somente Jogos de IDA no Modo FREE)!");
+        } else {
+            alert("Campeonato Gerado (IDA e VOLTA)!");
+        }
     };
 
     window.openScoreModal = (id) => {
@@ -497,7 +540,7 @@
 
     window.renderMatchesByPlayer = () => {
         const container = document.getElementById("matches-by-player");
-        const search = document.getElementById("search-input").value.toLowerCase();
+        const search = isPro ? document.getElementById("search-input").value.toLowerCase() : "";
         let players = [...globalPlayers].sort((a,b) => a.nome.localeCompare(b.nome)).filter(p => p.nome.toLowerCase().includes(search));
         
         container.innerHTML = players.map(player => {
@@ -515,12 +558,12 @@
                 <button class="player-header" onclick="const el = document.getElementById('c-${player.id}'); el.style.display = el.style.display === 'none' ? 'block' : 'none'">${player.nome.toUpperCase()} <i class="fas fa-chevron-down"></i></button>
                 <div class="player-content" id="c-${player.id}" style="display:none">
                     <div class="turno-header">IDA</div>${mIda.map(renderM).join('')}
-                    <div class="turno-header">VOLTA</div>${mVolta.map(renderM).join('')}
+                    ${mVolta.length > 0 ? `<div class="turno-header">VOLTA</div>${mVolta.map(renderM).join('')}` : ''}
                 </div>`;
         }).join('');
     };
 
-    // --- LÓGICA MODO PRO (NOVO) ---
+    // --- MODO PRO ---
     window.toggleProSection = () => {
         const el = document.getElementById('pro-activation-section');
         el.style.display = el.style.display === 'none' ? 'block' : 'none';
@@ -536,19 +579,17 @@
 
             if (codeSnap.exists() && !codeSnap.data().usado) {
                 const batch = writeBatch(db);
-                // Marcar código como usado
                 batch.update(codeRef, { usado: true, usado_por: currentUser.uid });
-                // Ativar PRO no usuário
                 batch.set(doc(db, "usuarios", currentUser.uid), { isPro: true }, { merge: true });
                 
                 await batch.commit();
-                alert("⭐ PARABÉNS! MODO PRO ATIVADO!");
+                alert("⭐ MODO PRO ATIVADO!");
                 toggleProSection();
             } else {
                 alert("Código inválido ou já utilizado!");
             }
         } catch (e) {
-            alert("Erro ao validar código.");
+            alert("Erro ao validar.");
         }
     };
 </script>
