@@ -462,7 +462,17 @@
 
     // --- UI HELPERS ---
     window.toggleAcc = (id) => { const el = document.getElementById(id); el.style.display = el.style.display === 'none' ? 'block' : 'none'; };
-    window.toggleConfrontos = () => { const el = document.getElementById('confrontos-content'); el.style.display = el.style.display === 'none' ? 'block' : 'none'; };
+    // Localize essa função no seu código e substitua por esta:
+window.toggleConfrontos = () => { 
+    const el = document.getElementById('confrontos-content'); 
+    const isOpening = el.style.display === 'none';
+    el.style.display = isOpening ? 'block' : 'none'; 
+    
+    // Se estiver abrindo, renderiza a lista completa
+    if (isOpening) {
+        renderMatchesByPlayer();
+    }
+};
     window.openScoreModal = (id) => { if(isSpectator) return; currentMatchId = id; const m = allMatches.find(x => x.id === id); document.getElementById('modal-p1').innerText = m.p1; document.getElementById('modal-p2').innerText = m.p2; document.getElementById('score-modal').style.display = 'flex'; };
     window.closeScoreModal = () => document.getElementById('score-modal').style.display = 'none';
     window.copySpectatorLink = () => { const link = window.location.origin + window.location.pathname + "?view=" + currentUser.uid; navigator.clipboard.writeText(link); alert("Link de visualização copiado!"); };
