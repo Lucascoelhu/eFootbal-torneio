@@ -80,6 +80,10 @@
 </div>
 
 <div class="container">
+    <div id="spectator-badge" style="display:none; text-align:center; padding:10px; background:rgba(255,170,0,0.1); border:1px solid var(--gold); border-radius:8px; color:var(--gold); font-size:10px; font-weight:bold; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">
+        <i class="fas fa-eye"></i> Modo Visualização Ativado
+    </div>
+
     <div class="leaderboard-card">
         <table id="leaderboard">
             <thead>
@@ -105,6 +109,11 @@
 
     <div id="admin-panel" class="leaderboard-card" style="display:none; border: 1px solid var(--primary); margin-top:20px;">
         <h4 style="margin:0 0 10px 0; font-size:12px; color:var(--primary)">MEU PAINEL</h4>
+        
+        <button onclick="copySpectatorLink()" style="width:100%; padding:12px; background:var(--gold); border:none; border-radius:8px; font-weight:900; cursor:pointer; margin-bottom:15px; font-size:10px; color:#000;">
+            <i class="fas fa-share-nodes"></i> COPIAR LINK DO SPECTADOR
+        </button>
+
         <div style="margin-bottom: 15px;">
             <input type="text" id="tournament-name" placeholder="NOME DO TORNEIO (Ex: Copa Master)" 
                 style="width:100%; padding:10px; background:#000; border:1px solid var(--primary); color:var(--primary); border-radius:5px; font-weight:900; text-transform:uppercase; font-size:10px;">
@@ -164,6 +173,16 @@
     let currentMatchId = null;
     let unsubP = null;
     let unsubM = null;
+    let isSpectator = false;
+
+    // --- LOGICA SPECTADOR ---
+    window.copySpectatorLink = () => {
+        if(!currentUser) return;
+        const link = window.location.origin + window.location.pathname + "?view=" + currentUser.uid;
+        navigator.clipboard.writeText(link).then(() => {
+            alert("Link do Spectador copiado!");
+        });
+    };
 
     // --- WHATSAPP ---
     window.shareResultsWhatsApp = () => {
@@ -224,7 +243,7 @@
         `).join('');
     }
 
-    // --- AUTENTICAÇÃO ---
+    // --- AUTENTICAÇÃO E INICIALIZAÇÃO ---
     window.handleAuth = async (mode) => {
         const email = document.getElementById('auth-email').value;
         const pass = document.getElementById('auth-pass').value;
@@ -246,22 +265,29 @@
     window.logout = () => signOut(auth);
 
     onAuthStateChanged(auth, (user) => {
-        const loginScreen = document.getElementById('login-screen');
-        const adminPanel = document.getElementById('admin-panel');
-        const authInfo = document.getElementById('auth-info');
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewId = urlParams.get('view');
 
-        if(user) {
+        if (viewId) {
+            // MODO SPECTADOR
+            isSpectator = true;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('spectator-badge').style.display = 'block';
+            startSync(viewId);
+        } else if(user) {
+            // MODO ADM
             currentUser = user;
-            loginScreen.style.display = 'none';
-            adminPanel.style.display = 'block';
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'block';
             const userName = user.email.split('@')[0];
-            authInfo.innerHTML = `Olá, <span style="color:var(--primary); font-weight:900;">${userName}</span> | <span onclick="logout()" style="text-decoration:underline; cursor:pointer; margin-left:8px; opacity:0.7;">SAIR</span>`;
+            document.getElementById('auth-info').innerHTML = `Olá, <span style="color:var(--primary); font-weight:900;">${userName}</span> | <span onclick="logout()" style="text-decoration:underline; cursor:pointer; margin-left:8px; opacity:0.7;">SAIR</span>`;
             startSync(user.uid);
         } else {
-            currentUser = null;
-            loginScreen.style.display = 'flex';
-            adminPanel.style.display = 'none';
-            authInfo.innerHTML = "";
+            // MODO DESLOGADO
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('auth-info').innerHTML = "";
             if(unsubP) unsubP();
             if(unsubM) unsubM();
             resetLocalData();
@@ -273,7 +299,7 @@
             globalPlayers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             globalPlayers.sort((a,b) => b.pts - a.pts || b.sg - a.sg || (b.gp || 0) - (a.gp || 0));
             renderLeaderboard();
-            updateAdminList();
+            if(!isSpectator) updateAdminList();
         });
 
         unsubM = onSnapshot(query(collection(db, "partidas"), where("ownerId", "==", uid)), (snap) => {
@@ -325,6 +351,7 @@
     };
 
     window.openScoreModal = (id) => {
+        if(isSpectator) return; // Trava para spectadores
         currentMatchId = id;
         const m = allMatches.find(x => x.id === id);
         document.getElementById('modal-p1').innerText = m.p1;
