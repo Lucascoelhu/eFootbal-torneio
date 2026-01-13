@@ -129,6 +129,10 @@
 
     <div id="admin-panel" class="leaderboard-card" style="display:none; border: 1px solid var(--primary); margin-top:20px;">
         <h4 style="margin:0 0 10px 0; font-size:12px; color:var(--primary)">MEU PAINEL</h4>
+        <div style="margin-bottom: 15px;">
+            <input type="text" id="tournament-name" placeholder="NOME DO TORNEIO (Ex: Copa Master)" 
+                style="width:100%; padding:10px; background:#000; border:1px solid var(--primary); color:var(--primary); border-radius:5px; font-weight:900; text-transform:uppercase; font-size:10px;">
+        </div>
         <div style="display: flex; gap: 5px; margin-bottom: 10px;">
             <input type="text" id="new-player-name" placeholder="Nome do Jogador" style="flex:1; padding:10px; background:#000; border:1px solid #333; color:#fff; border-radius:5px;">
             <button onclick="addPlayer()" style="background:var(--primary); border:none; padding:0 15px; font-weight:bold; border-radius:5px;">ADD</button>
@@ -184,7 +188,56 @@
     let currentMatchId = null;
     let unsubP = null;
     let unsubM = null;
+    
+    // --- COMPARTILHAMENTO WHATSAPP ---
+window.shareResultsWhatsApp = () => {
+    const tName = document.getElementById('tournament-name').value || "MEU TORNEIO";
+    let text = `🏆 *${tName.toUpperCase()}* 🏆\n\n*RODADAS EM ANDAMENTO:*\n`;
+    
+    // Agrupa por rodada igual ao seu renderer
+    const rounds = {};
+    allMatches.forEach(m => {
+        const label = `RODADA ${m.rodada} (${m.turno === 1 ? 'IDA' : 'VOLTA'})`;
+        if(!rounds[label]) rounds[label] = [];
+        rounds[label].push(`${m.p1} ${m.status === 'done' ? m.g1 : ''} vs ${m.status === 'done' ? m.g2 : ''} ${m.p2}`);
+    });
 
+    Object.keys(rounds).forEach(r => {
+        text += `\n📍 *${r}*\n` + rounds[r].join('\n') + `\n`;
+    });
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+};
+
+window.shareTableWhatsApp = () => {
+    const tName = document.getElementById('tournament-name').value || "MEU TORNEIO";
+    let text = `📊 *CLASSIFICAÇÃO: ${tName.toUpperCase()}*\n\n`;
+    
+    globalPlayers.forEach((p, i) => {
+        text += `${i+1}º ${p.nome.padEnd(12)} | ${p.pts}pts (${p.v}V / SG:${p.sg})\n`;
+    });
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+};
+
+// --- APAGAR JOGADOR INDIVIDUAL ---
+window.deletePlayer = async (id) => {
+    if(confirm("Remover este jogador?")) {
+        await deleteDoc(doc(db, "jogadores", id));
+    }
+};
+
+// --- ATUALIZA LISTA DE JOGADORES NO PAINEL ---
+    function updateAdminList() {
+        const list = document.getElementById("admin-players-list");
+        list.innerHTML = globalPlayers.map(p => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#1a1f26;     padding:8px 12px; border-radius:5px; margin-bottom:5px; font-size:11px;">
+                <span>${p.nome}</span>
+                <i class="fas fa-trash" style="color:var(--accent); cursor:pointer;" onclick="deletePlayer    ('${p.id}')"></i>
+            </div>
+        `).join('');
+    }
+    
     // --- AUTENTICAÇÃO ---
     window.handleAuth = async (mode) => {
     const email = document.getElementById('auth-email').value;
@@ -417,13 +470,18 @@
 
     // Linkando as demais funções ao window para o HTML acessar
     window.confirmReset = async () => {
-        if(!confirm("LIMPAR TUDO?")) return;
-        const batch = writeBatch(db);
-        const m = await getDocs(query(collection(db, "partidas"), where("ownerId", "==", currentUser.uid)));
-        const p = await getDocs(query(collection(db, "jogadores"), where("ownerId", "==", currentUser.uid)));
+    if(!confirm("LIMPAR TUDO? Isso apagará todos os jogadores e jogos para criar um NOVO torneio.")) return;
+    const batch = writeBatch(db);
+    
+    const m = await getDocs(query(collection(db, "partidas"), where("ownerId", "==", currentUser.uid)));
+    const p = await getDocs(query(collection(db, "jogadores"), where("ownerId", "==", currentUser.uid)));
+    
         m.forEach(d => batch.delete(d.ref));
-        p.forEach(d => batch.update(d.ref, { pts:0, v:0, e:0, d:0, sg:0, gp:0 }));
+        p.forEach(d => batch.delete(d.ref)); // Agora deleta os jogadores também
+    
         await batch.commit();
+        document.getElementById('tournament-name').value = ""; // Limpa nome do torneio
+        alert("Torneio resetado!");
     };
 
     // (As funções de renderMatchesByPlayer, WhatsApp e adminList seguem a mesma lógica anterior, apenas filtradas pelo ownerId já garantido no startSync)
