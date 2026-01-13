@@ -311,6 +311,7 @@
             const userName = user.email.split('@')[0];
             document.getElementById('auth-info').innerHTML = `Olá, <span style="color:var(--primary); font-weight:900;">${userName}</span> | <span onclick="logout()" style="text-decoration:underline; cursor:pointer; margin-left:8px; opacity:0.7;">SAIR</span>`;
             startSync(user.uid);
+            checkProStatus(user.uid);
         } else {
             // MODO DESLOGADO
             document.getElementById('login-screen').style.display = 'flex';
