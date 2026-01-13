@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EFOOTBALL CAMPEONATO</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #00ff88; --bg: #05070a; --card: #12161d; --text: #e0e0e0; --accent: #ff0055; --border: #232931; --gold: #ffaa00; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        body { background: var(--bg); color: var(--text); font-family: 'Montserrat', sans-serif; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
+        
+        header { text-align: center; padding: 20px 0; background: #000; border-bottom: 2px solid var(--primary); }
+        .live-badge { background: #ff0000; font-size: 10px; padding: 2px 8px; border-radius: 4px; color: white; animation: pulse 1.5s infinite; }
+        
+        .container { max-width: 800px; margin: auto; padding: 12px; }
+
+        #auth-info { margin-top: 12px; font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* TABELA */
+        .leaderboard-card { background: var(--card); border-radius: 12px; padding: 10px; margin-bottom: 20px; border: 1px solid var(--border); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 380px; }
+        th { color: #666; padding: 10px 5px; text-transform: uppercase; font-size: 9px; text-align: center; border-bottom: 1px solid var(--border); }
+        td { padding: 12px 5px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .name-td { text-align: left; font-weight: 700; color: #fff; }
+
+        .section-title { font-size: 12px; font-weight: 900; color: var(--primary); margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; padding: 0 5px; }
+        
+        /* RODADAS */
+        .results-scroll-container { display: flex; overflow-x: auto; gap: 15px; padding: 5px 5px 15px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+        .rodada-group { min-width: 280px; background: var(--card); border-radius: 10px; padding: 12px; border: 1px solid var(--border); scroll-snap-align: start; flex-shrink: 0; }
+        .rodada-label { font-size: 10px; color: var(--gold); font-weight: 900; margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 5px; text-align: center; }
+        
+        .match-item { display: flex; align-items: center; justify-content: space-between; background: #000; margin-bottom: 6px; padding: 8px 12px; border-radius: 6px; border: 1px solid #1a1f26; }
+        .match-item .p-name { font-size: 10px; flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .match-item .p-score { background: var(--primary); color: #000; font-weight: 900; padding: 2px 8px; border-radius: 4px; min-width: 45px; text-align: center; margin: 0 8px; cursor: pointer; }
+        .match-item .p-score.open { background: #333; color: #777; font-size: 9px; }
+
+        /* CONFRONTOS POR JOGADOR */
+        #matches-by-player .player-header { padding: 16px; font-size: 14px; letter-spacing: 1px; border-left: 4px solid var(--primary); margin-bottom: 8px; background: #1a1f26; color: #fff; width: 100%; border: none; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .player-content { display: none; padding: 10px; border: 1px solid #1a1f26; border-top: none; background: rgba(0,0,0,0.3); margin-bottom: 15px; border-radius: 0 0 8px 8px; }
+        .turno-header { background: #1e242d; color: var(--gold); padding: 8px 12px; font-size: 11px; font-weight: 900; margin: 15px 0 10px; border-radius: 4px; border-left: 3px solid var(--gold); }
+        .mando-badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 900; margin: 0 4px; text-transform: uppercase; }
+        .casa { background: #333; color: var(--primary); }
+        .fora { background: #222; color: #aaa; }
+
+        /* MODAL */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 10000; padding: 20px; }
+        .modal-content { background: var(--card); border: 1px solid var(--primary); width: 100%; max-width: 350px; border-radius: 15px; padding: 25px; text-align: center; }
+        .score-input-wrap { display: flex; justify-content: center; align-items: center; gap: 15px; margin: 20px 0; }
+        .score-input-wrap input { width: 65px; height: 65px; background: #000; border: 2px solid #333; color: var(--primary); font-size: 30px; font-weight: 900; text-align: center; border-radius: 10px; }
+        .btn-adm { width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; font-size: 11px; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="font-size: 18px; font-weight: 900; letter-spacing: -1px;">EFOOTBALL <span style="color:var(--primary)">CAMPEONATO</span></div>
+    <span class="live-badge">● AO VIVO</span>
+    <div id="auth-info"></div>
+</header>
+
+<div id="login-screen" style="position: fixed; inset: 0; background: var(--bg); z-index: 20000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+    <div class="leaderboard-card" style="width: 100%; max-width: 350px; border: 1px solid var(--primary); padding: 30px;">
+        <div style="text-align: center; margin-bottom: 25px;">
+            <div style="font-size: 20px; font-weight: 900; color: var(--primary);">BEM-VINDO</div>
+            <p style="font-size: 12px; opacity: 0.7;">Gerencie seu torneio eFootball</p>
+        </div>
+        <input type="email" id="auth-email" placeholder="Email" style="width:100%; padding:12px; background:#000; border:1px solid var(--border); color:#fff; border-radius:8px; margin-bottom:10px;">
+        <input type="password" id="auth-pass" placeholder="Senha" style="width:100%; padding:12px; background:#000; border:1px solid var(--border); color:#fff; border-radius:8px; margin-bottom:20px;">
+        
+        <button onclick="handleAuth('login')" style="width:100%; padding:12px; background:var(--primary); border:none; border-radius:8px; font-weight:900; cursor:pointer; margin-bottom:10px;">ENTRAR</button>
+        <button onclick="handleAuth('signup')" style="width:100%; padding:12px; background:transparent; border:1px solid var(--border); color:var(--text); border-radius:8px; font-weight:700; cursor:pointer;">CRIAR CONTA</button>
+        
+        <div id="auth-error" style="color: var(--accent); font-size: 10px; margin-top: 15px; text-align: center; font-weight: bold;"></div>
+    </div>
+</div>
+
+<div class="container">
+    <div id="spectator-badge" style="display:none; text-align:center; padding:10px; background:rgba(255,170,0,0.1); border:1px solid var(--gold); border-radius:8px; color:var(--gold); font-size:10px; font-weight:bold; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">
+        <i class="fas fa-eye"></i> Modo Visualização Ativado
+    </div>
+
+    <div class="leaderboard-card">
+        <table id="leaderboard">
+            <thead>
+                <tr>
+                    <th>#</th><th style="text-align:left">Jogador</th><th>P</th><th>V</th><th>E</th><th>D</th><th>SG</th><th>TG</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="section-title"><i class="fas fa-running"></i> Rodadas em Andamento</div>
+    <div id="results-by-round" class="results-scroll-container"></div>
+
+    <button class="btn-adm" style="background: var(--card); color: var(--primary); border: 1px solid var(--border); font-size: 13px; padding:15px;" onclick="toggleConfrontos()">
+        CONFRONTOS POR JOGADOR <i class="fas fa-users"></i>
+    </button>
+    
+    <div id="confrontos-content" style="display:none; margin-top:15px;">
+        <input type="text" id="search-input" style="width:100%; padding:14px; background:#000; border:1px solid #333; color:#fff; border-radius:8px; margin-bottom:15px;" placeholder="Filtrar por nome..." onkeyup="renderMatchesByPlayer()">
+        <div id="matches-by-player"></div>
+    </div>
+
+    <div id="admin-panel" class="leaderboard-card" style="display:none; border: 1px solid var(--primary); margin-top:20px;">
+        <h4 style="margin:0 0 10px 0; font-size:12px; color:var(--primary)">MEU PAINEL</h4>
+        
+        <button onclick="copySpectatorLink()" style="width:100%; padding:12px; background:var(--gold); border:none; border-radius:8px; font-weight:900; cursor:pointer; margin-bottom:15px; font-size:10px; color:#000;">
+            <i class="fas fa-share-nodes"></i> COPIAR LINK DO SPECTADOR
+        </button>
+
+        <div style="margin-bottom: 15px;">
+            <input type="text" id="tournament-name" placeholder="NOME DO TORNEIO (Ex: Copa Master)" 
+                style="width:100%; padding:10px; background:#000; border:1px solid var(--primary); color:var(--primary); border-radius:5px; font-weight:900; text-transform:uppercase; font-size:10px;">
+        </div>
+        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+            <input type="text" id="new-player-name" placeholder="Nome do Jogador" style="flex:1; padding:10px; background:#000; border:1px solid #333; color:#fff; border-radius:5px;">
+            <button onclick="addPlayer()" style="background:var(--primary); border:none; padding:0 15px; font-weight:bold; border-radius:5px;">ADD</button>
+        </div>
+        <div id="admin-players-list"></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+            <button onclick="sortearTorneio()" style="background:var(--gold); border:none; padding:10px; font-weight:bold; border-radius:5px;">GERAR JOGOS</button>
+            <button onclick="confirmReset()" style="background:#444; border:none; color:#fff; padding:10px; font-weight:bold; border-radius:5px;">LIMPAR TUDO</button>
+        </div>
+        <button class="btn-adm" style="background:#25D366; color:white;" onclick="shareResultsWhatsApp()"><i class="fab fa-whatsapp"></i> COMPARTILHAR RODADAS</button>
+        <button class="btn-adm" style="background:#007bff; color:white;" onclick="shareTableWhatsApp()"><i class="fab fa-whatsapp"></i> COMPARTILHAR RANKING</button>
+    </div>
+</div>
+
+<div id="score-modal" class="modal">
+    <div class="modal-content">
+        <div style="font-size:10px; color:var(--gold); font-weight:800; margin-bottom:15px;">ATUALIZAR PLACAR</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:bold; font-size:13px;">
+            <div id="modal-p1" style="flex:1; text-align:right;"></div>
+            <div style="width:30px; opacity:0.3;">X</div>
+            <div id="modal-p2" style="flex:1; text-align:left;"></div>
+        </div>
+        <div class="score-input-wrap">
+            <input type="number" id="input-g1" inputmode="numeric">
+            <input type="number" id="input-g2" inputmode="numeric">
+        </div>
+        <button class="btn-adm" style="background:var(--primary); color:#000;" onclick="saveScore()">SALVAR RESULTADO</button>
+        <button class="btn-adm" style="background:none; color:#666;" onclick="closeScoreModal()">CANCELAR</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, getDocs, writeBatch, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAWic8GgxaPKjyFtIKH4KXj4J6A6bVOBg0",
+        authDomain: "efootball-torneio.firebaseapp.com",
+        projectId: "efootball-torneio",
+        storageBucket: "efootball-torneio.firebasestorage.app",
+        messagingSenderId: "909084318349",
+        appId: "1:909084318349:web:a627eaf51f973b87df60c4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    let currentUser = null;
+    let globalPlayers = [];
+    let allMatches = [];
+    let currentMatchId = null;
+    let unsubP = null;
+    let unsubM = null;
+    let isSpectator = false;
+
+    // --- LOGICA SPECTADOR ---
+    window.copySpectatorLink = () => {
+        if(!currentUser) return;
+        const link = window.location.origin + window.location.pathname + "?view=" + currentUser.uid;
+        navigator.clipboard.writeText(link).then(() => {
+            alert("Link do Spectador copiado!");
+        });
+    };
+
+    // --- WHATSAPP ---
+    window.shareResultsWhatsApp = () => {
+        const tName = document.getElementById('tournament-name').value || "MEU TORNEIO";
+        let text = `🏆 *${tName.toUpperCase()}* 🏆\n\n*RODADAS EM ANDAMENTO:*\n`;
+        const rounds = {};
+        allMatches.forEach(m => {
+            const label = `RODADA ${m.rodada} (${m.turno === 1 ? 'IDA' : 'VOLTA'})`;
+            if(!rounds[label]) rounds[label] = [];
+            rounds[label].push(`${m.p1} ${m.status === 'done' ? m.g1 : ''} vs ${m.status === 'done' ? m.g2 : ''} ${m.p2}`);
+        });
+        Object.keys(rounds).forEach(r => { text += `\n📍 *${r}*\n` + rounds[r].join('\n') + `\n`; });
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+    };
+
+    window.shareTableWhatsApp = () => {
+        const tName = document.getElementById('tournament-name').value || "MEU TORNEIO";
+        let text = `📊 *CLASSIFICAÇÃO: ${tName.toUpperCase()}*\n\n`;
+        globalPlayers.forEach((p, i) => {
+            text += `${i+1}º ${p.nome.padEnd(12)} | ${p.pts}pts (${p.v}V / SG:${p.sg})\n`;
+        });
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+    };
+
+    // --- JOGADORES ---
+    window.deletePlayer = async (id) => {
+        if(confirm("Remover este jogador?")) {
+            await deleteDoc(doc(db, "jogadores", id));
+        }
+    };
+
+    window.editPlayer = async (id, antigoNome) => {
+        const novoNome = prompt("Novo nome para " + antigoNome + ":", antigoNome);
+        if (!novoNome || novoNome.trim() === "" || novoNome === antigoNome) return;
+
+        try {
+            const batch = writeBatch(db);
+            batch.update(doc(db, "jogadores", id), { nome: novoNome.trim() });
+            allMatches.forEach(m => {
+                if (m.p1 === antigoNome) batch.update(doc(db, "partidas", m.id), { p1: novoNome.trim() });
+                if (m.p2 === antigoNome) batch.update(doc(db, "partidas", m.id), { p2: novoNome.trim() });
+            });
+            await batch.commit();
+            alert("Nome atualizado!");
+        } catch (e) { alert("Erro ao editar."); }
+    };
+
+    function updateAdminList() {
+        const list = document.getElementById("admin-players-list");
+        list.innerHTML = globalPlayers.map(p => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#1a1f26; padding:8px 12px; border-radius:5px; margin-bottom:5px; font-size:11px;">
+                <span>${p.nome}</span>
+                <div style="display:flex; gap:12px;">
+                    <i class="fas fa-edit" style="color:var(--gold); cursor:pointer;" onclick="editPlayer('${p.id}', '${p.nome}')"></i>
+                    <i class="fas fa-trash" style="color:var(--accent); cursor:pointer;" onclick="deletePlayer('${p.id}')"></i>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // --- AUTENTICAÇÃO E INICIALIZAÇÃO ---
+    window.handleAuth = async (mode) => {
+        const email = document.getElementById('auth-email').value;
+        const pass = document.getElementById('auth-pass').value;
+        const errorDiv = document.getElementById('auth-error');
+        errorDiv.innerText = "Processando...";
+
+        if(!email || !pass) { errorDiv.innerText = "Preencha tudo"; return; }
+
+        try {
+            if(mode === 'signup') {
+                await createUserWithEmailAndPassword(auth, email, pass);
+                alert("Conta criada!");
+            } else {
+                await signInWithEmailAndPassword(auth, email, pass);
+            }
+        } catch (e) { errorDiv.innerText = "Erro: " + e.message; }
+    };
+
+    window.logout = () => signOut(auth);
+
+    onAuthStateChanged(auth, (user) => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewId = urlParams.get('view');
+
+        if (viewId) {
+            // MODO SPECTADOR
+            isSpectator = true;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('spectator-badge').style.display = 'block';
+            startSync(viewId);
+        } else if(user) {
+            // MODO ADM
+            currentUser = user;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'block';
+            const userName = user.email.split('@')[0];
+            document.getElementById('auth-info').innerHTML = `Olá, <span style="color:var(--primary); font-weight:900;">${userName}</span> | <span onclick="logout()" style="text-decoration:underline; cursor:pointer; margin-left:8px; opacity:0.7;">SAIR</span>`;
+            startSync(user.uid);
+        } else {
+            // MODO DESLOGADO
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('auth-info').innerHTML = "";
+            if(unsubP) unsubP();
+            if(unsubM) unsubM();
+            resetLocalData();
+        }
+    });
+
+    function startSync(uid) {
+        unsubP = onSnapshot(query(collection(db, "jogadores"), where("ownerId", "==", uid)), (snap) => {
+            globalPlayers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            globalPlayers.sort((a,b) => b.pts - a.pts || b.sg - a.sg || (b.gp || 0) - (a.gp || 0));
+            renderLeaderboard();
+            if(!isSpectator) updateAdminList();
+        });
+
+        unsubM = onSnapshot(query(collection(db, "partidas"), where("ownerId", "==", uid)), (snap) => {
+            allMatches = snap.docs.map(d => ({id: d.id, ...d.data()}));
+            renderResultsByRound();
+            if(document.getElementById('confrontos-content').style.display === 'block') renderMatchesByPlayer();
+        });
+    }
+
+    function resetLocalData() { globalPlayers = []; allMatches = []; renderLeaderboard(); renderResultsByRound(); }
+
+    // --- LÓGICA DO TORNEIO ---
+    window.addPlayer = async () => {
+        const nameInput = document.getElementById("new-player-name");
+        const n = nameInput.value.trim();
+        if(n && currentUser) {
+            await addDoc(collection(db, "jogadores"), { 
+                nome: n, pts: 0, v: 0, e: 0, d: 0, sg: 0, gp: 0, ownerId: currentUser.uid 
+            });
+            nameInput.value = "";
+        }
+    };
+
+    window.sortearTorneio = async () => {
+        if(globalPlayers.length < 2) return alert("Mínimo 2 jogadores");
+        if(!confirm("Gerar nova tabela? Jogos atuais serão apagados.")) return;
+
+        const batch = writeBatch(db);
+        const mSnap = await getDocs(query(collection(db, "partidas"), where("ownerId", "==", currentUser.uid)));
+        mSnap.forEach(d => batch.delete(d.ref));
+
+        let p = [...globalPlayers];
+        if (p.length % 2 !== 0) p.push({ nome: "FOLGA", id: "bye" });
+        const n = p.length;
+
+        for (let r = 0; r < n - 1; r++) {
+            for (let i = 0; i < n / 2; i++) {
+                const p1 = p[i]; const p2 = p[n - 1 - i];
+                if (p1.id !== "bye" && p2.id !== "bye") {
+                    const matchData = { g1:0, g2:0, status:'open', rodada: r + 1, ownerId: currentUser.uid };
+                    batch.set(doc(collection(db, "partidas")), { ...matchData, p1: p1.nome, p2: p2.nome, turno: 1 });
+                    batch.set(doc(collection(db, "partidas")), { ...matchData, p1: p2.nome, p2: p1.nome, turno: 2 });
+                }
+            }
+            p.splice(1, 0, p.pop());
+        }
+        await batch.commit();
+        alert("Campeonato Gerado!");
+    };
+
+    window.openScoreModal = (id) => {
+        if(isSpectator) return; // Trava para spectadores
+        currentMatchId = id;
+        const m = allMatches.find(x => x.id === id);
+        document.getElementById('modal-p1').innerText = m.p1;
+        document.getElementById('modal-p2').innerText = m.p2;
+        document.getElementById('input-g1').value = m.status === 'done' ? m.g1 : "";
+        document.getElementById('input-g2').value = m.status === 'done' ? m.g2 : "";
+        document.getElementById('score-modal').style.display = 'flex';
+    };
+
+    window.saveScore = async () => {
+        const g1 = parseInt(document.getElementById('input-g1').value);
+        const g2 = parseInt(document.getElementById('input-g2').value);
+        if(isNaN(g1) || isNaN(g2)) return alert("Preencha o placar");
+        
+        await updateDoc(doc(db, "partidas", currentMatchId), { g1, g2, status: 'done' });
+        closeScoreModal();
+        recalculateTable();
+    };
+
+    async function recalculateTable() {
+        const batch = writeBatch(db);
+        const pSnap = await getDocs(query(collection(db, "jogadores"), where("ownerId", "==", currentUser.uid)));
+        
+        pSnap.forEach(pDoc => {
+            const n = pDoc.data().nome;
+            let st = { pts:0, v:0, e:0, d:0, sg:0, gp:0 };
+            allMatches.forEach(m => {
+                if(m.status !== 'done') return;
+                if(m.p1 === n) {
+                    st.gp += m.g1; st.sg += (m.g1 - m.g2);
+                    if(m.g1 > m.g2) { st.pts += 3; st.v++; }
+                    else if(m.g1 === m.g2) { st.pts += 1; st.e++; } else st.d++;
+                } else if(m.p2 === n) {
+                    st.gp += m.g2; st.sg += (m.g2 - m.g1);
+                    if(m.g2 > m.g1) { st.pts += 3; st.v++; }
+                    else if(m.g1 === m.g2) { st.pts += 1; st.e++; } else st.d++;
+                }
+            });
+            batch.update(pDoc.ref, st);
+        });
+        await batch.commit();
+    }
+
+    // --- RENDERERS ---
+    function renderLeaderboard() {
+        document.querySelector("#leaderboard tbody").innerHTML = globalPlayers.map((p, i) => `
+            <tr>
+                <td style="color:var(--primary); font-weight:800;">${i+1}º</td>
+                <td class="name-td">${p.nome}</td>
+                <td style="color:var(--primary); font-weight:900;">${p.pts}</td>
+                <td>${p.v}</td><td>${p.e}</td><td>${p.d}</td><td>${p.sg}</td>
+                <td style="font-weight:bold;">${p.gp || 0}</td>
+            </tr>`).join('');
+    }
+
+    function renderResultsByRound() {
+        const container = document.getElementById("results-by-round");
+        if(allMatches.length === 0) { container.innerHTML = ""; return; }
+        const groups = {};
+        allMatches.forEach(m => {
+            const label = `RODADA ${m.rodada} (${m.turno === 1 ? 'IDA' : 'VOLTA'})`;
+            if(!groups[label]) groups[label] = { turno: m.turno, rodada: m.rodada, games: [] };
+            groups[label].games.push(m);
+        });
+        const sortedLabels = Object.keys(groups).sort((a,b) => groups[a].turno - groups[b].turno || groups[a].rodada - groups[b].rodada);
+        container.innerHTML = sortedLabels.map(label => `
+            <div class="rodada-group">
+                <div class="rodada-label">${label}</div>
+                ${groups[label].games.map(m => `
+                    <div class="match-item">
+                        <span class="p-name" style="text-align:right">${m.p1}</span>
+                        <span class="p-score ${m.status !== 'done' ? 'open' : ''}" onclick="openScoreModal('${m.id}')">
+                            ${m.status === 'done' ? `${m.g1} - ${m.g2}` : 'VS'}
+                        </span>
+                        <span class="p-name" style="text-align:left">${m.p2}</span>
+                    </div>`).join('')}
+            </div>`).join('');
+    }
+
+    window.closeScoreModal = () => document.getElementById('score-modal').style.display = 'none';
+    window.toggleConfrontos = () => {
+        const el = document.getElementById('confrontos-content');
+        el.style.display = el.style.display === 'block' ? 'none' : 'block';
+        if(el.style.display === 'block') renderMatchesByPlayer();
+    };
+
+    window.confirmReset = async () => {
+        if(!confirm("LIMPAR TUDO? Apaga jogadores e jogos.")) return;
+        const batch = writeBatch(db);
+        const m = await getDocs(query(collection(db, "partidas"), where("ownerId", "==", currentUser.uid)));
+        const p = await getDocs(query(collection(db, "jogadores"), where("ownerId", "==", currentUser.uid)));
+        m.forEach(d => batch.delete(d.ref));
+        p.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        alert("Resetado!");
+    };
+
+    window.renderMatchesByPlayer = () => {
+        const container = document.getElementById("matches-by-player");
+        const search = document.getElementById("search-input").value.toLowerCase();
+        let players = [...globalPlayers].sort((a,b) => a.nome.localeCompare(b.nome)).filter(p => p.nome.toLowerCase().includes(search));
+        
+        container.innerHTML = players.map(player => {
+            const pMatches = allMatches.filter(m => m.p1 === player.nome || m.p2 === player.nome);
+            const mIda = pMatches.filter(m => m.turno === 1).sort((a,b) => a.rodada - b.rodada);
+            const mVolta = pMatches.filter(m => m.turno === 2).sort((a,b) => a.rodada - b.rodada);
+            const renderM = (m) => `
+                <div style="font-size:9px; color:#777; margin: 12px 0 4px; font-weight:800; padding-left:5px;">RODADA ${m.rodada}</div>
+                <div class="match-item">
+                    <div class="p-name" style="text-align:right; color:${m.p1 === player.nome ? 'var(--primary)' : '#fff'}">${m.p1} <span class="mando-badge casa">CASA</span></div>
+                    <span class="p-score ${m.status !== 'done' ? 'open' : ''}" onclick="openScoreModal('${m.id}')">${m.status === 'done' ? `${m.g1} - ${m.g2}` : 'VS'}</span>
+                    <div class="p-name" style="text-align:left; color:${m.p2 === player.nome ? 'var(--primary)' : '#fff'}"><span class="mando-badge fora">FORA</span> ${m.p2}</div>
+                </div>`;
+            return `
+                <button class="player-header" onclick="const el = document.getElementById('c-${player.id}'); el.style.display = el.style.display === 'none' ? 'block' : 'none'">${player.nome.toUpperCase()} <i class="fas fa-chevron-down"></i></button>
+                <div class="player-content" id="c-${player.id}" style="display:none">
+                    <div class="turno-header">IDA</div>${mIda.map(renderM).join('')}
+                    <div class="turno-header">VOLTA</div>${mVolta.map(renderM).join('')}
+                </div>`;
+        }).join('');
+    };
+</script>
+</body>
+</html>
